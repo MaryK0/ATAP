@@ -11,7 +11,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE_FILE="$ROOT/docker-compose.test.yml"
+cd "$ROOT"
+COMPOSE_FILE="docker-compose.test.yml"  # относительный путь: одинаково работает в Git Bash, Linux и Jenkins
 PROJECT="${ATAP_TEST_PROJECT:-atap-test-$(date +%s)-$RANDOM}"
 
 compose() { docker compose -p "$PROJECT" -f "$COMPOSE_FILE" "$@"; }
