@@ -78,7 +78,13 @@ public class PostgresMapRepository : IMapRepository
                 IcaoCode = reader.GetString(1),
                 Name = reader.GetString(2),
                 Latitude = reader.GetDouble(3),
-                Longitude = reader.GetDouble(4)
+                Longitude = reader.GetDouble(4),
+                AnalysisRadius = reader.IsDBNull(5) ? 10000 : reader.GetInt32(5),
+                IataCode = reader.IsDBNull(6) ? null : reader.GetString(6).Trim(),
+                City = reader.IsDBNull(7) ? null : reader.GetString(7),
+                CountryCode = reader.IsDBNull(8) ? null : reader.GetString(8).Trim(),
+                AirportType = reader.IsDBNull(9) ? null : reader.GetString(9),
+                Elevation = reader.IsDBNull(10) ? null : reader.GetInt32(10)
             });
         }
         

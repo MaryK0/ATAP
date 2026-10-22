@@ -39,8 +39,8 @@ info:
     identifier: CC-BY-4.0
 
 servers:
-  - url: http://localhost:5075
-    description: Локальная разработка (`make run-blazor`)
+  - url: http://localhost:5080
+    description: Локальная разработка (проект ATAP.Api, `make run-api`)
 
 tags:
   - name: sessions

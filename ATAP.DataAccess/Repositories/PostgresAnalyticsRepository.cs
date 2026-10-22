@@ -77,7 +77,8 @@ public class PostgresAnalyticsRepository : IAnalyticsRepository
         
         const string sql = @"
             SELECT id, airport_id, flight_id, callsign, entry_time, exit_time, 
-                   duration_seconds, date_hour, is_departure, is_arrival, loaded_at
+                   duration_seconds, date_hour, is_departure, is_arrival,
+                   max_altitude_in_zone, min_altitude_in_zone, loaded_at
             FROM mart.mart_airport_congestion 
             WHERE entry_time >= @start AND exit_time <= @end
             ORDER BY entry_time DESC";
@@ -101,6 +102,8 @@ public class PostgresAnalyticsRepository : IAnalyticsRepository
             congestion.DateHour = reader.IsDBNull(reader.GetOrdinal("date_hour")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("date_hour"));
             congestion.IsDeparture = reader.IsDBNull(reader.GetOrdinal("is_departure")) ? false : reader.GetBoolean(reader.GetOrdinal("is_departure"));
             congestion.IsArrival = reader.IsDBNull(reader.GetOrdinal("is_arrival")) ? false : reader.GetBoolean(reader.GetOrdinal("is_arrival"));
+            congestion.MaxAltitudeInZone = reader.IsDBNull(reader.GetOrdinal("max_altitude_in_zone")) ? 0 : reader.GetInt32(reader.GetOrdinal("max_altitude_in_zone"));
+            congestion.MinAltitudeInZone = reader.IsDBNull(reader.GetOrdinal("min_altitude_in_zone")) ? 0 : reader.GetInt32(reader.GetOrdinal("min_altitude_in_zone"));
             congestion.LoadedAt = reader.IsDBNull(reader.GetOrdinal("loaded_at")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("loaded_at"));
             
             result.Add(congestion);

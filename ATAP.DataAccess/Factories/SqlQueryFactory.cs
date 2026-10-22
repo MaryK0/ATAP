@@ -33,11 +33,12 @@ public class SqlQueryFactory : ISqlQueryFactory
         FROM mart.current_flights_map";
     
     public string GetAirportsQuery() => @"
-        SELECT airport_id, icao_code, name, latitude, longitude 
+        SELECT airport_id, icao_code, name, latitude, longitude,
+               analysis_radius, iata_code, city, country_code, airport_type, elevation
         FROM dds.airports";
     
     public string GetUserByUsernameQuery() => @"
-        SELECT user_id, username, email, password_hash, role 
+        SELECT user_id, username, email, password_hash, role, created_at
         FROM dds.users 
         WHERE username = @username";
     

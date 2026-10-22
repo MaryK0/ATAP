@@ -16,14 +16,14 @@ public class SavedReportService : ISavedReportService
     public Task<List<SavedReportDto>> GetByUserAsync(int userId)
         => _repo.GetByUserAsync(userId);
 
-    public async Task SaveAsync(int userId, CreateSavedReportDto dto)
+    public async Task<int> SaveAsync(int userId, CreateSavedReportDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ArgumentException("Название отчёта не может быть пустым");
         if (dto.DateFrom > dto.DateTo)
             throw new ArgumentException("Дата начала не может быть позже даты окончания");
 
-        await _repo.CreateAsync(userId, dto);
+        return await _repo.CreateAsync(userId, dto);
     }
 
     public Task DeleteAsync(int id, int userId)

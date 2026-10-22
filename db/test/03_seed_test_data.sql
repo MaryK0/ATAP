@@ -4,9 +4,13 @@
 -- Набор детерминирован: все значения фиксированы, поэтому тесты проверяют точные числа.
 -- Единственные значения, зависящие от времени, — позиции для карты (относительно NOW()).
 
--- Пользователь-аналитик (хэш-заглушка: репозиторные тесты пароль не проверяют)
+-- Пользователи с известными паролями (хэш — SHA-256 в Base64, как в AuthService):
+--   admin    / Admin#2026
+--   analyst1 / Analyst#2026
+-- В базовом сиде create_tables.sql у admin пароль записан открытым текстом и войти им нельзя.
+UPDATE dds.users SET password_hash = 'ta8r65t/1apOshthklvThWeT5U4KOQUvvPr1tHf9B/M=' WHERE username = 'admin';
 INSERT INTO dds.users (username, email, password_hash, role) VALUES
-('analyst1', 'analyst1@atap.com', 'analyst1-hash', 'analyst')
+('analyst1', 'analyst1@atap.com', 'RZ5gip+GzHO4DBFmzuzzpjyQu6+be5lmQJQvtM7NemQ=', 'analyst')
 ON CONFLICT (username) DO NOTHING;
 
 -- Суда

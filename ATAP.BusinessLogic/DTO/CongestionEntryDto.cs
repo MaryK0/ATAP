@@ -3,6 +3,7 @@ namespace ATAP.BusinessLogic.DTO;
 public class CongestionEntryDto
 {
     public long Id { get; set; }
+    public int AirportId { get; set; }
     public int FlightId { get; set; }
     public string Callsign { get; set; } = string.Empty;
     public DateTime EntryTime { get; set; }

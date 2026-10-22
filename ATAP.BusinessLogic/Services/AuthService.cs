@@ -30,7 +30,8 @@ public class AuthService : IAuthService
             UserId = user.UserId,
             Username = user.Username,
             Email = user.Email,
-            Role = user.Role
+            Role = user.Role,
+            CreatedAt = user.CreatedAt
         };
         
         return _currentUser;

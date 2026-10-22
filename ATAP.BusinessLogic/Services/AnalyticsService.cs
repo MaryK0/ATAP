@@ -16,6 +16,38 @@ public class AnalyticsService : IAnalyticsService
         _cacheRepo = cacheRepo;
     }
 
+    public async Task<CongestionReportDto> GetAllCongestionAsync(DateTime start, DateTime end)
+    {
+        if (start > end)
+            throw new ArgumentException("Дата начала не может быть позже даты окончания", nameof(start));
+
+        var rows = await _analyticsRepo.GetAllCongestionAsync(start, end);
+        return BuildReport(0, start, end, rows);
+    }
+
+    private static CongestionReportDto BuildReport(int airportId, DateTime start, DateTime end, List<CongestionDb> rows) => new()
+    {
+        AirportId = airportId,
+        PeriodStart = start,
+        PeriodEnd = end,
+        DepartureCount = rows.Count(r => r.IsDeparture),
+        ArrivalCount = rows.Count(r => r.IsArrival),
+        Entries = rows.Select(r => new CongestionEntryDto
+        {
+            Id = r.Id,
+            AirportId = r.AirportId,
+            FlightId = r.FlightId,
+            Callsign = r.Callsign,
+            EntryTime = r.EntryTime,
+            ExitTime = r.ExitTime,
+            DurationSeconds = r.DurationSeconds,
+            IsDeparture = r.IsDeparture,
+            IsArrival = r.IsArrival,
+            MaxAltitudeInZone = r.MaxAltitudeInZone,
+            MinAltitudeInZone = r.MinAltitudeInZone
+        }).ToList()
+    };
+
     public async Task<CongestionReportDto> GetCongestionAsync(int airportId, DateTime start, DateTime end)
     {
         if (start > end)
@@ -32,27 +64,7 @@ public class AnalyticsService : IAnalyticsService
 
         var rows = await _analyticsRepo.GetCongestionAsync(airportId, start, end, includeDetails: true);
 
-        var report = new CongestionReportDto
-        {
-            AirportId = airportId,
-            PeriodStart = start,
-            PeriodEnd = end,
-            DepartureCount = rows.Count(r => r.IsDeparture),
-            ArrivalCount = rows.Count(r => r.IsArrival),
-            Entries = rows.Select(r => new CongestionEntryDto
-            {
-                Id = r.Id,
-                FlightId = r.FlightId,
-                Callsign = r.Callsign,
-                EntryTime = r.EntryTime,
-                ExitTime = r.ExitTime,
-                DurationSeconds = r.DurationSeconds,
-                IsDeparture = r.IsDeparture,
-                IsArrival = r.IsArrival,
-                MaxAltitudeInZone = r.MaxAltitudeInZone,
-                MinAltitudeInZone = r.MinAltitudeInZone
-            }).ToList()
-        };
+        var report = BuildReport(airportId, start, end, rows);
 
         if (_cacheRepo != null)
             await _cacheRepo.SetAsync(cacheKey, report, 3600);

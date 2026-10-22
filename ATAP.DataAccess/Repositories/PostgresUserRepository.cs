@@ -33,7 +33,8 @@ public class PostgresUserRepository : IUserRepository
                 Username = reader.GetString(1),
                 Email = reader.GetString(2),
                 PasswordHash = reader.GetString(3),
-                Role = reader.GetString(4)
+                Role = reader.GetString(4),
+                CreatedAt = reader.IsDBNull(5) ? default : reader.GetDateTime(5)
             };
         }
         

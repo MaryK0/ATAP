@@ -48,7 +48,13 @@ public class MapService : IMapService
             Name = a.Name,
             IcaoCode = a.IcaoCode,
             Latitude = a.Latitude,
-            Longitude = a.Longitude
+            Longitude = a.Longitude,
+            AnalysisRadius = a.AnalysisRadius,
+            IataCode = a.IataCode,
+            City = a.City,
+            CountryCode = a.CountryCode,
+            Type = a.AirportType,
+            Elevation = a.Elevation
         }).ToList();
 
         if (_cacheRepository != null)
