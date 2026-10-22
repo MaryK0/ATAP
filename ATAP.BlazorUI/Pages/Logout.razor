@@ -1,0 +1,22 @@
+@page "/logout"
+@rendermode InteractiveServer
+@using ATAP.BlazorUI.Services
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject NavigationManager Navigation
+@inject AppStateService AppState
+@inject ProtectedLocalStorage LocalStorage
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. Очищаем локальное хранилище браузера
+        await LocalStorage.DeleteAsync("username");
+        await LocalStorage.DeleteAsync("role");
+
+        // 2. Очищаем состояние
+        AppState.Logout();
+        
+        // 3. Возвращаем на главную
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

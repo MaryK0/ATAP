@@ -1,0 +1,163 @@
+@page "/admin"
+@inject AdminViewModel VM
+@inject AppStateService AppState
+@inject NavigationManager Navigation
+
+@if (AppState.UserRole != "admin")
+{
+    <div class="card" style="text-align: center; padding: 48px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">⛔</div>
+        <p>Эта страница доступна только администраторам.</p>
+        <a class="btn btn-ghost" href="/">На главную</a>
+    </div>
+    return;
+}
+
+<h2 class="page-title">Управление пользователями</h2>
+<p class="page-subtitle">Добавление, редактирование и удаление учётных записей</p>
+
+<div style="margin-bottom: calc(var(--sp)*2);">
+    <button class="btn btn-primary btn-sm" @onclick="VM.OpenAddForm">
+        + Добавить пользователя
+    </button>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-value">@VM.Users.Count</div>
+        <div class="stat-label">Всего пользователей</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">@VM.AdminCount</div>
+        <div class="stat-label">Администраторов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">@VM.AnalystCount</div>
+        <div class="stat-label">Аналитиков</div>
+    </div>
+</div>
+
+@if (VM.Error != null)
+{
+    <div class="alert alert-error">@VM.Error</div>
+}
+
+@if (VM.IsLoading)
+{
+    <div class="alert alert-info">Загрузка...</div>
+}
+else
+{
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Email</th>
+                    <th>Роль</th>
+                    <th>Дата регистрации</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in VM.Users)
+                {
+                    <tr>
+                        <td>@user.UserId</td>
+                        <td><b>@user.Username</b></td>
+                        <td>@user.Email</td>
+                        <td>
+                            <span class="@(user.Role == "admin" ? "badge badge-admin" : "badge badge-analyst")">
+                                @(user.Role == "admin" ? "Администратор" : "Аналитик")
+                            </span>
+                        </td>
+                        <td>@user.CreatedAt.ToString("yyyy-MM-dd")</td>
+                        <td style="display: flex; gap: 6px; align-items: center;">
+                            <button class="btn btn-ghost btn-sm" @onclick="() => VM.OpenEditForm(user)">
+                                Изменить
+                            </button>
+                            @if (user.Role != "admin")
+                            {
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => OnDelete(user.UserId)">
+                                    Удалить
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (VM.ShowModal)
+{
+    <div class="modal-overlay" @onclick="VM.CloseModal">
+        <div class="dialog-box" @onclick:stopPropagation>
+            <div class="dialog-header">
+                <span class="dialog-title">@(VM.IsEditing ? "Редактирование пользователя" : "Добавление пользователя")</span>
+                <button class="btn btn-ghost btn-sm" @onclick="VM.CloseModal">✕</button>
+            </div>
+
+            @if (VM.ModalError != null)
+            {
+                <div class="alert alert-error">@VM.ModalError</div>
+            }
+
+            <div class="form-group">
+                <label class="form-label">Логин</label>
+                <input class="form-control" @bind="VM.EditUser.Username" @bind:event="oninput"
+                       placeholder="Логин пользователя" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-control" type="email" @bind="VM.EditUser.Email" @bind:event="oninput"
+                       placeholder="Email пользователя" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Роль</label>
+                <select class="form-control form-select" @bind="VM.EditUser.Role">
+                    <option value="analyst">Аналитик</option>
+                    <option value="admin">Администратор</option>
+                </select>
+            </div>
+            @if (!VM.IsEditing)
+            {
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input class="form-control" type="password" @bind="VM.NewPassword" @bind:event="oninput"
+                           placeholder="Пароль" />
+                </div>
+            }
+
+            <div style="display: flex; gap: var(--sp); margin-top: calc(var(--sp)*2);">
+                <button class="btn btn-primary" @onclick="OnSave" disabled="@VM.IsLoading">
+                    @(VM.IsLoading ? "Сохранение..." : "Сохранить")
+                </button>
+                <button class="btn btn-ghost" @onclick="VM.CloseModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await VM.LoadAsync();
+    }
+
+    private async Task OnSave()
+    {
+        await VM.SaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnDelete(int userId)
+    {
+        var currentId = VM.Users.FirstOrDefault(u => u.Username == AppState.CurrentUser)?.UserId ?? 0;
+        await VM.DeleteAsync(userId, currentId);
+        StateHasChanged();
+    }
+}

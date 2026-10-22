@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Гость" as Guest
+actor "Аналитик\n(авторизованный пользователь)" as Analyst
+actor "Администратор" as Admin
+
+' --- Гость ---
+usecase "Регистрация" as UC_Register
+usecase "Ввод почты и\nпароля, создание\nлогина" as UC_RegisterData
+usecase "Авторизация" as UC_Login
+usecase "Ввод логина и\nпароля" as UC_LoginData
+
+Guest --> UC_Register
+Guest --> UC_Login
+UC_Register --> UC_RegisterData
+UC_Login --> UC_LoginData
+
+' --- Аналитик ---
+usecase "Задать фильтры\nна карте" as UC_MapFilters
+usecase "Задать фильтры\nв витрине" as UC_ShowcaseFilters
+usecase "Выгрузить\ncsv отчет" as UC_ExportCSV
+usecase "Выйти из аккаунта" as UC_Logout
+
+Analyst --> UC_MapFilters
+Analyst --> UC_ShowcaseFilters
+Analyst --> UC_Logout
+UC_ShowcaseFilters --> UC_ExportCSV
+
+' --- Администратор ---
+usecase "Открыть таблицу\nс пользователями" as UC_OpenUsers
+usecase "Редактировать\nпользователя" as UC_GrantAdmin
+usecase "Удалить\nпользователя" as UC_DeleteUser
+usecase "Добавить\nпользователя" as UC_AddUser
+usecase "Авторизация\nв Airflow" as UC_AirflowLogin
+usecase "Управлять\nпараметрами Airflow" as UC_AirflowManage
+usecase "Перезапустить\nDAG" as UC_RestartDAG
+
+Admin --> UC_Logout
+Admin --> UC_OpenUsers
+Admin --> UC_AirflowLogin
+Admin --> UC_MapFilters
+Admin --> UC_ShowcaseFilters
+
+UC_OpenUsers --> UC_GrantAdmin
+UC_OpenUsers --> UC_DeleteUser
+UC_OpenUsers --> UC_AddUser
+
+UC_AirflowLogin --> UC_AirflowManage
+UC_AirflowLogin --> UC_RestartDAG
+
+@enduml

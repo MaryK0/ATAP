@@ -1,0 +1,24 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+actor "Гость" as guest
+actor "Аналитик" as analyst
+actor "Администратор" as admin
+
+component "«Программная система»\nATAP\nAir Traffic Analytics Platform" as atap
+
+component "«Внешняя система»\nOpenSky Network\nДанные о полетах" as opensky
+component "«Внешняя система»\nOpenStreetMap\nКартографические тайлы" as osm
+component "«Внешняя система»\nOpenFlights\nСправочник аэропортов" as openflights
+
+guest ..> atap : <<HTTPS>>\nПросматривает карту
+analyst ..> atap : <<HTTPS>>\nПросматривает аналитические витрины
+admin ..> atap : <<HTTPS>>\nУправляет пользователями
+
+atap ..> opensky : <<REST API>>\nЗагружает данные о полетах
+atap ..> osm : <<HTTPS>>\nЗагружает картографическую подложку
+atap ..> openflights : <<CSV/HTTPS>>\nЗагружает справочник аэропортов
+
+@enduml

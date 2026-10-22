@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATAP.BusinessLogic", "ATAP.BusinessLogic\ATAP.BusinessLogic.csproj", "{1B4B194E-C385-4D51-8C31-FB3760B0A53A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATAP.BusinessLogic.Tests", "ATAP.BusinessLogic.Tests\ATAP.BusinessLogic.Tests.csproj", "{F6172E96-5188-4DC8-89AC-37A30FACF770}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATAP.DataAccess", "ATAP.DataAccess\ATAP.DataAccess.csproj", "{BC911503-6FE1-46C7-9E08-640D60462B1D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATAP.IntegrationTests", "ATAP.IntegrationTests\ATAP.IntegrationTests.csproj", "{D2B485B4-5A4C-43F9-A643-CCEFBDAB7D47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATAP.ConsoleUI", "ATAP.ConsoleUI\ATAP.ConsoleUI.csproj", "{7F3E9A5B-C2D4-4F8E-B1A3-6D2C8E5F9A7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATAP.DataAccess.Tests", "ATAP.DataAccess.Tests\ATAP.DataAccess.Tests.csproj", "{4D7CE308-885B-46FC-B4A0-B92AFE6122F0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B4B194E-C385-4D51-8C31-FB3760B0A53A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B4B194E-C385-4D51-8C31-FB3760B0A53A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B4B194E-C385-4D51-8C31-FB3760B0A53A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B4B194E-C385-4D51-8C31-FB3760B0A53A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6172E96-5188-4DC8-89AC-37A30FACF770}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6172E96-5188-4DC8-89AC-37A30FACF770}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6172E96-5188-4DC8-89AC-37A30FACF770}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6172E96-5188-4DC8-89AC-37A30FACF770}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC911503-6FE1-46C7-9E08-640D60462B1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC911503-6FE1-46C7-9E08-640D60462B1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC911503-6FE1-46C7-9E08-640D60462B1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC911503-6FE1-46C7-9E08-640D60462B1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2B485B4-5A4C-43F9-A643-CCEFBDAB7D47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2B485B4-5A4C-43F9-A643-CCEFBDAB7D47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2B485B4-5A4C-43F9-A643-CCEFBDAB7D47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2B485B4-5A4C-43F9-A643-CCEFBDAB7D47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F3E9A5B-C2D4-4F8E-B1A3-6D2C8E5F9A7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F3E9A5B-C2D4-4F8E-B1A3-6D2C8E5F9A7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F3E9A5B-C2D4-4F8E-B1A3-6D2C8E5F9A7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F3E9A5B-C2D4-4F8E-B1A3-6D2C8E5F9A7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D7CE308-885B-46FC-B4A0-B92AFE6122F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D7CE308-885B-46FC-B4A0-B92AFE6122F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D7CE308-885B-46FC-B4A0-B92AFE6122F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D7CE308-885B-46FC-B4A0-B92AFE6122F0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

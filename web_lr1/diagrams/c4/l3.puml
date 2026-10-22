@@ -1,0 +1,37 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+
+actor "Пользователь" as user
+
+rectangle "Blazor Server App" {
+    component "«Компонент»\nView (Razor Components)\nОтображение карты и аналитики" as ui
+    component "«Компонент»\nViewModel\nСостояние и логика взаимодействия" as vm
+}
+
+rectangle "ConsoleUI" {
+    component "«Компонент»\nМеню по ролям\nGuestMenu / AnalystMenu / AdminMenu" as cui
+}
+
+component "«Компонент»\nСервисы\nATAP.BusinessLogic" as services
+
+component "«Компонент»\nРепозитории\nATAP.DataAccess" as repositories
+
+database "PostgreSQL" as db
+database "Redis" as cache
+
+user ..> ui : <<HTTPS>>
+user ..> cui : <<Запуск из ОС>>
+
+ui --> vm : использует
+vm --> services : вызывает
+cui --> services : вызывает
+
+services --> repositories : использует
+
+repositories ..> db : <<SQL>>
+repositories ..> cache : <<Redis Protocol>>
+
+@enduml

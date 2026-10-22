@@ -1,0 +1,18 @@
+@startuml
+actor Пользователь
+participant "Система" as system
+database "БД" as db
+
+Пользователь -> system : Заполнить форму регистрации
+system -> db : Проверить email
+
+alt Email уже существует
+    db --> system : email найден
+    system --> Пользователь : Сообщение "Email уже зарегистрирован"
+else Email свободен
+    db --> system : email не найден
+    system -> db : Создать пользователя
+    db --> system : OK
+    system --> Пользователь : Успешная регистрация
+end
+@enduml

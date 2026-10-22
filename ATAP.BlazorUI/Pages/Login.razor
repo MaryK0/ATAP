@@ -1,0 +1,55 @@
+@page "/login"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject LoginViewModel VM
+@inject AppStateService AppState
+@inject NavigationManager Navigation
+@inject ProtectedLocalStorage LocalStorage
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-title">Вход в систему</div>
+
+        @if (VM.Error != null)
+        {
+            <div class="alert alert-error">@VM.Error</div>
+        }
+
+        <div class="form-group">
+            <label class="form-label">Логин</label>
+            <input class="form-control" @bind="VM.Username" @bind:event="oninput"
+                   placeholder="Введите логин" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Пароль</label>
+            <input class="form-control" type="password" @bind="VM.Password" @bind:event="oninput"
+                   placeholder="Введите пароль" @onkeydown="OnKeyDown" />
+        </div>
+
+        <button class="btn btn-primary btn-block" @onclick="OnLogin" disabled="@VM.IsLoading">
+            @(VM.IsLoading ? "Вход..." : "Войти")
+        </button>
+
+        <div class="auth-footer">
+            Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private async Task OnLogin()
+    {
+        var user = await VM.LoginAsync();
+        if (user == null) return;
+
+        AppState.SetUser(true, user.Username, user.Role, user.UserId);
+        await LocalStorage.SetAsync("username", user.Username);
+        await LocalStorage.SetAsync("role", user.Role);
+        await LocalStorage.SetAsync("userId", user.UserId);
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await OnLogin();
+    }
+}

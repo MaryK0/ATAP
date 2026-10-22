@@ -1,0 +1,43 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+actor "Пользователь" as user
+
+rectangle "«Программная система»\nATAP\nAir Traffic Analytics Platform" {
+
+    component "«Контейнер»\nFrontend\nBlazor Server\nОтображает карту и аналитику" as frontend
+
+    component "«Контейнер»\nBackend\nASP.NET Core\nБизнес-логика и API" as backend
+
+    component "«Контейнер»\nБаза данных\nPostgreSQL\nХранилище данных" as db
+
+    component "«Контейнер»\nКэш\nRedis\nКэширование текущих позиций" as cache
+
+    component "«Контейнер»\nConsoleUI\nC# Console App\nТехнологический UI" as console
+
+    component "«Контейнер»\nAirflow\nЗагрузка данных из OpenSky API" as airflow
+
+    component "«Контейнер»\ndbt\nТрансформация данных" as dbt
+}
+
+component "«Внешняя система»\nOpenSky Network\nДанные о полетах" as opensky
+component "«Внешняя система»\nOpenStreetMap\nКартографические тайлы" as osm
+
+user ..> frontend : <<HTTPS>>\nИспользует
+user ..> console : <<Запуск из ОС>>\nИспользует
+
+frontend ..> backend : <<SignalR>>\nWebSocket-соединение
+console ..> backend : <<Вызов методов>>\nБизнес-логика
+
+backend ..> db : <<SQL>>\nЧитает/пишет данные
+backend ..> cache : <<Redis Protocol>>\nЧитает/пишет кэш
+
+frontend ..> osm : <<HTTPS>>\nЗагружает тайлы
+
+airflow ..> opensky : <<REST API>>\nЗагружает данные
+airflow ..> db : <<SQL>>\nСохраняет в staging
+dbt ..> db : <<SQL>>\nТрансформирует данные
+
+@enduml

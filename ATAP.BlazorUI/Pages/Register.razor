@@ -1,0 +1,51 @@
+@page "/register"
+@inject RegisterViewModel VM
+@inject NavigationManager Navigation
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-title">Регистрация</div>
+
+        @if (VM.Error != null)
+        {
+            <div class="alert alert-error">@VM.Error</div>
+        }
+        @if (VM.Success)
+        {
+            <div class="alert alert-success">
+                Регистрация прошла успешно! <a href="/login">Войти в систему</a>
+            </div>
+        }
+
+        <div class="form-group">
+            <label class="form-label">Логин</label>
+            <input class="form-control" @bind="VM.Username" @bind:event="oninput"
+                   placeholder="Придумайте логин" disabled="@VM.Success" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" @bind="VM.Email" @bind:event="oninput"
+                   placeholder="Введите email" disabled="@VM.Success" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Пароль</label>
+            <input class="form-control" type="password" @bind="VM.Password" @bind:event="oninput"
+                   placeholder="Придумайте пароль" disabled="@VM.Success" />
+        </div>
+
+        @if (!VM.Success)
+        {
+            <button class="btn btn-primary btn-block" @onclick="OnRegister" disabled="@VM.IsLoading">
+                @(VM.IsLoading ? "Регистрация..." : "Зарегистрироваться")
+            </button>
+        }
+
+        <div class="auth-footer">
+            Уже есть аккаунт? <a href="/login">Войти</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private async Task OnRegister() => await VM.RegisterAsync();
+}

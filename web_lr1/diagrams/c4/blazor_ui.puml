@@ -1,0 +1,50 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+actor "Пользователь" as user
+
+rectangle "Blazor Server App (GUI)" {
+
+    rectangle "View\n(Razor Components)" {
+        component "«Компонент»\nLogin / Register\nАвторизация и регистрация" as auth_view
+        component "«Компонент»\nIndex\nГлавная страница" as index_view
+        component "«Компонент»\nMap\nКарта воздушного движения" as map_view
+        component "«Компонент»\nAnalytics\nАналитика загруженности" as analytics_view
+        component "«Компонент»\nAdmin\nУправление пользователями" as admin_view
+    }
+
+    rectangle "ViewModel" {
+        component "«Компонент»\nLoginViewModel / RegisterViewModel\nСостояние форм авторизации" as auth_vm
+        component "«Компонент»\nMapViewModel\nСостояние карты и рейсов" as map_vm
+        component "«Компонент»\nAnalyticsViewModel\nФильтры и данные аналитики" as analytics_vm
+        component "«Компонент»\nAdminViewModel\nСписок пользователей, модальное окно" as admin_vm
+    }
+
+    component "«Компонент»\nAppStateService\nГлобальное состояние сессии" as state
+}
+
+component "«Компонент»\nСервисы\nATAP.BusinessLogic" as services
+
+user ..> auth_view : <<HTTPS>>
+user ..> index_view : <<HTTPS>>
+user ..> map_view : <<HTTPS>>
+user ..> analytics_view : <<HTTPS>>
+user ..> admin_view : <<HTTPS>>
+
+auth_view --> auth_vm : использует
+map_view --> map_vm : использует
+analytics_view --> analytics_vm : использует
+admin_view --> admin_vm : использует
+
+auth_view --> state : читает/обновляет
+index_view --> state : читает
+admin_view --> state : читает
+
+auth_vm --> services : вызывает
+map_vm --> services : вызывает
+analytics_vm --> services : вызывает
+admin_vm --> services : вызывает
+
+@enduml

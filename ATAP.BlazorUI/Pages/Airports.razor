@@ -1,0 +1,54 @@
+@page "/airports"
+
+@using ATAP.BusinessLogic.DTO
+@using ATAP.BusinessLogic.Interfaces.Services
+
+<h3>🏢 Список аэропортов</h3>
+
+<input type="text" @bind="search" placeholder="Поиск..." style="margin: 10px 0; padding: 5px; width: 200px;" />
+
+@if (airports == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <p><strong>Всего: @airports.Count</strong></p>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #1a1a2e; color: white;">
+                <th style="padding: 8px;">ID</th>
+                <th style="padding: 8px;">ICAO</th>
+                <th style="padding: 8px;">Название</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in filteredAirports.Take(50))
+            {
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px;">@a.Id</td>
+                    <td style="padding: 8px;"><b>@a.IcaoCode</b></td>
+                    <td style="padding: 8px;">@a.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Inject] protected IMapService MapService { get; set; } = null!;
+
+    private List<AirportDto>? airports;
+    private string search = "";
+
+    private List<AirportDto> filteredAirports => airports?
+        .Where(a => string.IsNullOrEmpty(search) ||
+                    a.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    a.IcaoCode.Contains(search, StringComparison.OrdinalIgnoreCase))
+        .ToList() ?? new List<AirportDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        airports = await MapService.GetAirportsAsync();
+    }
+}

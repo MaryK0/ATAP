@@ -1,0 +1,96 @@
+@page "/reports"
+@inject SavedReportViewModel VM
+@inject AppStateService AppState
+@inject IJSRuntime JS
+
+@if (!AppState.IsAuthenticated)
+{
+    <div class="alert alert-info">
+        Для просмотра отчётов необходимо <a href="/login">войти в систему</a>.
+    </div>
+    return;
+}
+
+<h2 class="page-title">Мои сохранённые отчёты</h2>
+<p class="page-subtitle">Ранее сохранённые фильтры аналитики загруженности аэропортов</p>
+
+@if (VM.Error != null)
+{
+    <div class="alert alert-error">@VM.Error</div>
+}
+@if (VM.Success != null)
+{
+    <div class="alert alert-success">@VM.Success</div>
+}
+
+@if (VM.IsLoading)
+{
+    <div class="alert alert-info">⏳ Загрузка...</div>
+}
+else if (VM.Reports.Count == 0)
+{
+    <div class="alert alert-info">
+        Нет сохранённых отчётов. Перейдите в <a href="/analytics">Аналитику</a> и нажмите «Сохранить отчёт».
+    </div>
+}
+else
+{
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Аэропорт</th>
+                        <th>Период</th>
+                        <th>Сохранён</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in VM.Reports)
+                    {
+                        <tr>
+                            <td><b>@r.Name</b></td>
+                            <td>@r.AirportName</td>
+                            <td>@r.DateFrom.ToString("yyyy-MM-dd") — @r.DateTo.ToString("yyyy-MM-dd")</td>
+                            <td>@r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm"
+                                        @onclick="() => DownloadCsv(r)">
+                                    📥 Скачать CSV
+                                </button>
+                                <button class="btn btn-ghost btn-sm" style="color: var(--c-danger);"
+                                        @onclick="() => DeleteReport(r.Id)">
+                                    Удалить
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await VM.LoadAsync(AppState.UserId);
+    }
+
+    private async Task DownloadCsv(SavedReportDto r)
+    {
+        var bytes = await VM.GetCsvBytesAsync(r);
+        if (bytes == null) return;
+        var base64 = Convert.ToBase64String(bytes);
+        var name = $"report_{r.AirportName}_{r.DateFrom:yyyyMMdd}_{r.DateTo:yyyyMMdd}.csv";
+        await JS.InvokeVoidAsync("eval",
+            $"var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='{name}';a.click();");
+    }
+
+    private async Task DeleteReport(int id)
+    {
+        await VM.DeleteAsync(id, AppState.UserId);
+    }
+}

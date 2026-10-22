@@ -1,0 +1,53 @@
+@page "/map"
+@inject MapViewModel VM
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<h2 class="page-title">Карта воздушного движения</h2>
+<p class="page-subtitle">Текущие позиции воздушных судов • автообновление каждые 5 минут</p>
+
+<div class="flex-row mb-3">
+    <div class="stat-card" style="margin-bottom: 0;">
+        <div class="stat-value">@VM.FlightCount</div>
+        <div class="stat-label">Активных рейсов</div>
+    </div>
+    <button class="btn btn-primary btn-sm" @onclick="Refresh" disabled="@VM.IsLoading">
+        @(VM.IsLoading ? "Загрузка..." : "🔄 Обновить")
+    </button>
+    @if (VM.Error != null)
+    {
+        <span class="alert alert-error" style="margin: 0; padding: 6px 12px;">@VM.Error</span>
+    }
+</div>
+
+<div id="atap-map" style="height: 580px; border-radius: var(--radius); border: 1px solid var(--c-border);"></div>
+
+@code {
+    private Timer? _timer;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("atapMap.init", "atap-map");
+            var airports = await VM.LoadAirportsAsync();
+            await JS.InvokeVoidAsync("atapMap.updateAirports", airports);
+            await Refresh();
+            _timer = new Timer(
+                async _ => await InvokeAsync(Refresh),
+                null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+        }
+    }
+
+    private async Task Refresh()
+    {
+        var points = await VM.LoadFlightsAsync();
+        await JS.InvokeVoidAsync("atapMap.updateFlights", points);
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_timer != null) await _timer.DisposeAsync();
+    }
+}

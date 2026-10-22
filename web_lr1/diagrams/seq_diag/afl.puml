@@ -1,0 +1,32 @@
+@startuml
+participant "Airflow" as airflow
+participant "OpenSky API" as api
+database "БД" as db
+actor "Администратор" as admin
+
+group Каждые 5 минут
+    airflow -> api : Запросить позиции
+    alt Ошибка API
+        api --> airflow : ошибка
+        airflow -> db : Записать в лог
+        airflow -> admin : Уведомить
+    else Успешно
+        api --> airflow : данные
+        airflow -> db : Сохранить в staging
+        airflow -> db : Запустить трансформацию
+    end
+end
+
+group Каждый час
+    airflow -> api : Запросить рейсы
+    alt Ошибка доступа
+        api --> airflow : ошибка аутентификации
+        airflow -> db : Записать в лог
+        airflow -> admin : Уведомить
+    else Успешно
+        api --> airflow : данные
+        airflow -> db : Сохранить в staging
+        airflow -> db : Запустить трансформацию
+    end
+end
+@enduml

@@ -1,0 +1,128 @@
+@startuml
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+' =========================
+' ИНТЕРФЕЙСЫ РЕПОЗИТОРИЕВ
+' =========================
+
+interface IMapRepository {
+    + GetCurrentFlights(): List<CurrentFlightMapDb>
+    + GetAirports(): List<AirportDb>
+}
+
+interface IAnalyticsRepository {
+    + GetFlightsByPeriod(start: DateTime, end: DateTime): List<FlightDb>
+    + GetPositionsByFlightAndPeriod(flightId: int, start: DateTime, end: DateTime): List<PositionDb>
+    + GetAirports(): List<AirportDb>
+    + GetCongestion(airportId: int, start: DateTime, end: DateTime): List<CongestionDb>
+}
+
+interface IUserRepository {
+    + GetByUsername(username: string): UserDb
+    + Create(user: UserDb): int
+}
+
+interface ICacheRepository {
+    + Get<T>(key: string): T
+    + Set<T>(key: string, value: T, ttl: int): void
+}
+
+' =========================
+' РЕАЛИЗАЦИИ
+' =========================
+
+class PostgresMapRepository {
+    - _context: AppDbContext
+    + GetCurrentFlights(): List<CurrentFlightMapDb>
+    + GetAirports(): List<AirportDb>
+}
+
+class PostgresAnalyticsRepository {
+    - _context: AppDbContext
+    + GetFlightsByPeriod(start: DateTime, end: DateTime): List<FlightDb>
+    + GetPositionsByFlightAndPeriod(flightId: int, start: DateTime, end: DateTime): List<PositionDb>
+    + GetAirports(): List<AirportDb>
+    + GetCongestion(airportId: int, start: DateTime, end: DateTime): List<CongestionDb>
+}
+
+class PostgresUserRepository {
+    - _context: AppDbContext
+    + GetByUsername(username: string): UserDb
+    + Create(user: UserDb): int
+}
+
+class RedisCacheRepository {
+    - _connection: IConnectionMultiplexer
+    + Get<T>(key: string): T
+    + Set<T>(key: string, value: T, ttl: int): void
+}
+
+' =========================
+' СВЯЗИ (реализация интерфейсов)
+' =========================
+
+IMapRepository <|.. PostgresMapRepository
+IAnalyticsRepository <|.. PostgresAnalyticsRepository
+IUserRepository <|.. PostgresUserRepository
+ICacheRepository <|.. RedisCacheRepository
+
+' =========================
+' СУЩНОСТИ БАЗЫ ДАННЫХ
+' =========================
+
+class FlightDb {
+    + flight_id: int <<PK>>
+    + callsign: string
+}
+
+class PositionDb {
+    + position_id: long <<PK>>
+    + flight_id: int <<FK>>
+    + latitude: double
+    + longitude: double
+}
+
+class AirportDb {
+    + airport_id: int <<PK>>
+    + icao_code: string <<UK>>
+    + name: string
+    + latitude: double
+    + longitude: double
+}
+
+class CurrentFlightMapDb {
+    + flight_id: int <<PK>>
+    + callsign: string
+    + latitude: double
+    + longitude: double
+}
+
+class CongestionDb {
+    + id: long <<PK>>
+    + airport_id: int <<FK>>
+    + flight_id: int <<FK>>
+    + entry_time: DateTime
+    + exit_time: DateTime
+}
+
+class UserDb {
+    + user_id: int <<PK>>
+    + username: string <<UK>>
+    + role: string
+}
+
+' =========================
+' СВЯЗИ С СУЩНОСТЯМИ БД
+' =========================
+
+PostgresMapRepository --> CurrentFlightMapDb
+PostgresMapRepository --> AirportDb
+PostgresAnalyticsRepository --> FlightDb
+PostgresAnalyticsRepository --> PositionDb
+PostgresAnalyticsRepository --> AirportDb
+PostgresAnalyticsRepository --> CongestionDb
+PostgresUserRepository --> UserDb
+
+@enduml

@@ -1,0 +1,54 @@
+@page "/"
+@inject AppStateService AppState
+
+<h2 class="page-title">Air Traffic Analytics Platform</h2>
+<p class="page-subtitle">Платформа для анализа и мониторинга воздушного движения</p>
+
+@if (AppState.IsAuthenticated)
+{
+    <div class="alert alert-success" style="margin-bottom: 24px;">
+        Вы вошли как <strong>@AppState.CurrentUser</strong>
+        (<span class="badge @(AppState.UserRole == "admin" ? "badge-admin" : "badge-analyst")">
+            @AppState.UserRole
+        </span>)
+    </div>
+
+    <div class="stats-row">
+        <a href="/map" class="stat-card" style="text-decoration: none; cursor: pointer;">
+            <div class="stat-value">🗺️</div>
+            <div class="stat-label">Карта рейсов</div>
+        </a>
+        <a href="/analytics" class="stat-card" style="text-decoration: none; cursor: pointer;">
+            <div class="stat-value">📊</div>
+            <div class="stat-label">Аналитика</div>
+        </a>
+        @if (AppState.UserRole == "admin")
+        {
+            <a href="/admin" class="stat-card" style="text-decoration: none; cursor: pointer;">
+                <div class="stat-value">⚙️</div>
+                <div class="stat-label">Пользователи</div>
+            </a>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info" style="margin-bottom: 24px;">
+        Для доступа к аналитике необходимо <a href="/login">войти в систему</a>.
+    </div>
+
+    <div class="stats-row">
+        <a href="/map" class="stat-card" style="text-decoration: none; cursor: pointer;">
+            <div class="stat-value">🗺️</div>
+            <div class="stat-label">Карта рейсов</div>
+        </a>
+        <a href="/login" class="stat-card" style="text-decoration: none; cursor: pointer;">
+            <div class="stat-value">🔐</div>
+            <div class="stat-label">Войти</div>
+        </a>
+        <a href="/register" class="stat-card" style="text-decoration: none; cursor: pointer;">
+            <div class="stat-value">📝</div>
+            <div class="stat-label">Регистрация</div>
+        </a>
+    </div>
+}

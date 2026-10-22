@@ -1,0 +1,171 @@
+@page "/analytics"
+@inject AnalyticsViewModel VM
+@inject AppStateService AppState
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@if (!AppState.IsAuthenticated)
+{
+    <div class="alert alert-info">
+        Для просмотра аналитики необходимо <a href="/login">войти в систему</a>.
+    </div>
+    return;
+}
+
+<h2 class="page-title">Загруженность аэропортов</h2>
+<p class="page-subtitle">Витрина mart_airport_congestion — данные о взлётах и посадках</p>
+
+<div class="card">
+    <div class="filters-bar">
+        <div class="filter-field" style="flex: 2; min-width: 200px;">
+            <label class="filter-label">Аэропорт</label>
+            <select class="form-control form-select" @bind="VM.SelectedAirportId">
+                <option value="0">— Все аэропорты —</option>
+                @foreach (var a in VM.Airports)
+                {
+                    <option value="@a.Id">@a.Name (@a.IcaoCode)</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field">
+            <label class="filter-label">Период с</label>
+            <input class="form-control" type="date" @bind="VM.StartDate" />
+        </div>
+        <div class="filter-field">
+            <label class="filter-label">Период по</label>
+            <input class="form-control" type="date" @bind="VM.EndDate" />
+        </div>
+        <div class="filter-field" style="justify-content: flex-end;">
+            <label class="filter-label">&nbsp;</label>
+            <button class="btn btn-primary" @onclick="Apply" disabled="@VM.IsLoading">
+                @(VM.IsLoading ? "Загрузка..." : "Применить")
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (VM.Error != null)
+{
+    <div class="alert alert-error">@VM.Error</div>
+}
+
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-value">@VM.Data.Count</div>
+        <div class="stat-label">Записей</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">@VM.DepartureCount</div>
+        <div class="stat-label">Вылетов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">@VM.ArrivalCount</div>
+        <div class="stat-label">Прилётов</div>
+    </div>
+    <div style="display:flex; align-items:flex-end; margin-bottom: 0; gap: 8px;">
+        <button class="btn btn-ghost btn-sm" @onclick="ExportCsv" disabled="@(VM.Data.Count == 0)">
+            📥 Выгрузить CSV
+        </button>
+        @if (AppState.IsAuthenticated && VM.SelectedAirportId != 0)
+        {
+            <button class="btn btn-ghost btn-sm" @onclick="ToggleSavePanel" disabled="@(VM.Data.Count == 0)">
+                💾 Сохранить отчёт
+            </button>
+        }
+    </div>
+</div>
+
+@if (_showSavePanel)
+{
+    <div class="card" style="padding: 12px 16px;">
+        <div style="display:flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <input class="form-control" style="flex: 1; min-width: 200px;"
+                   placeholder="Название отчёта" @bind="VM.SaveName" />
+            <button class="btn btn-primary btn-sm" @onclick="SaveReport" disabled="@VM.IsSaving">
+                @(VM.IsSaving ? "Сохранение..." : "Сохранить")
+            </button>
+            <button class="btn btn-ghost btn-sm" @onclick="ToggleSavePanel">Отмена</button>
+        </div>
+        @if (VM.SaveError != null)  { <div class="alert alert-error"  style="margin-top: 8px;">@VM.SaveError</div>  }
+        @if (VM.SaveSuccess != null) { <div class="alert alert-success" style="margin-top: 8px;">@VM.SaveSuccess</div> }
+    </div>
+}
+
+@if (VM.IsLoading)
+{
+    <div class="alert alert-info">⏳ Загрузка данных...</div>
+}
+else if (VM.Data.Count == 0 && VM.Error == null)
+{
+    <div class="alert alert-info">Нет данных за выбранный период.</div>
+}
+else
+{
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-wrap" style="max-height: 520px; overflow-y: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Аэропорт</th>
+                        <th>Рейс</th>
+                        <th>Позывной</th>
+                        <th>Время входа</th>
+                        <th>Время выхода</th>
+                        <th>Длит., с</th>
+                        <th>Тип</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in VM.Data.Take(200))
+                    {
+                        <tr>
+                            <td>@row.Id</td>
+                            <td>@row.AirportId</td>
+                            <td>@row.FlightId</td>
+                            <td><b>@row.Callsign</b></td>
+                            <td>@row.EntryTime.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@row.ExitTime.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@row.DurationSeconds</td>
+                            <td>@(row.IsDeparture ? "↑ Вылет" : "↓ Прилёт")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (VM.Data.Count > 200)
+        {
+            <div style="padding: 8px 16px; color: var(--c-muted); font-size: 13px; border-top: 1px solid var(--c-border);">
+                Показано 200 из @VM.Data.Count записей. Используйте фильтры или выгрузите CSV.
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool _showSavePanel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await VM.InitAsync();
+    }
+
+    private async Task Apply() => await VM.ApplyFiltersAsync();
+
+    private void ToggleSavePanel() => _showSavePanel = !_showSavePanel;
+
+    private async Task SaveReport()
+    {
+        var ok = await VM.SaveReportAsync(AppState.UserId);
+        if (ok) _showSavePanel = false;
+    }
+
+    private async Task ExportCsv()
+    {
+        var bytes = VM.BuildCsv();
+        var base64 = Convert.ToBase64String(bytes);
+        var name = $"congestion_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("eval",
+            $"var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='{name}';a.click();");
+    }
+}

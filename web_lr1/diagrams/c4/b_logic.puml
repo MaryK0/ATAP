@@ -1,0 +1,122 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+title L4: Компонент бизнес-логики (ATAP)
+
+' =========================
+' DTO
+' =========================
+class FlightDto {
+    + Id: int
+    + Callsign: string
+    + Latitude: double
+    + Longitude: double
+    + Altitude: int
+}
+
+class AirportDto {
+    + Id: int
+    + Name: string
+    + IcaoCode: string
+    + Latitude: double
+    + Longitude: double
+}
+
+class CongestionReportDto {
+    + AirportId: int
+    + Hour: DateTime
+    + DepartureCount: int
+    + ArrivalCount: int
+}
+
+class UserDto {
+    + UserId: int
+    + Username: string
+    + Role: string
+}
+
+' =========================
+' ИНТЕРФЕЙСЫ СЕРВИСОВ
+' =========================
+interface IMapService {
+    + GetCurrentFlights(): List<FlightDto>
+    + GetAirports(): List<AirportDto>
+}
+
+interface IAnalyticsService {
+    + GetCongestion(airportId: int, start: DateTime, end: DateTime): CongestionReportDto
+    + ExportToCsv(report: CongestionReportDto): byte[]
+}
+
+interface IAuthService {
+    + Login(username: string, password: string): bool
+    + Register(username: string, email: string, password: string): bool
+    + GetCurrentUser(): UserDto
+}
+
+' =========================
+' ИНТЕРФЕЙСЫ РЕПОЗИТОРИЕВ
+' =========================
+interface IMapRepository {
+    + GetCurrentFlights(): List<FlightMapDb>
+    + GetAirports(): List<AirportDb>
+}
+
+interface IAnalyticsRepository {
+    + GetCongestion(airportId: int, start: DateTime, end: DateTime): List<CongestionDb>
+}
+
+interface IUserRepository {
+    + GetByUsername(username: string): UserDb
+    + Create(user: UserDb): int
+}
+
+interface ICacheRepository {
+    + Get<T>(key: string): T
+    + Set<T>(key: string, value: T, ttl: int): void
+}
+
+' =========================
+' РЕАЛИЗАЦИИ СЕРВИСОВ
+' =========================
+class MapService {
+    - _mapRepo: IMapRepository
+    - _cacheRepo: ICacheRepository
+    + GetCurrentFlights(): List<FlightDto>
+    + GetAirports(): List<AirportDto>
+}
+
+class AnalyticsService {
+    - _analyticsRepo: IAnalyticsRepository
+    - _cacheRepo: ICacheRepository
+    + GetCongestion(airportId: int, start: DateTime, end: DateTime): CongestionReportDto
+    + ExportToCsv(report: CongestionReportDto): byte[]
+}
+
+class AuthService {
+    - _userRepo: IUserRepository
+    + Login(username: string, password: string): bool
+    + Register(username: string, email: string, password: string): bool
+    + GetCurrentUser(): UserDto
+}
+
+' =========================
+' СВЯЗИ
+' =========================
+IMapService <|.. MapService
+IAnalyticsService <|.. AnalyticsService
+IAuthService <|.. AuthService
+
+MapService --> IMapRepository
+MapService --> ICacheRepository
+AnalyticsService --> IAnalyticsRepository
+AnalyticsService --> ICacheRepository
+AuthService --> IUserRepository
+
+MapService --> FlightDto
+MapService --> AirportDto
+AnalyticsService --> CongestionReportDto
+AuthService --> UserDto
+
+@enduml

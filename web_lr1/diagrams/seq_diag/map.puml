@@ -1,0 +1,40 @@
+PlantUML Editor
+
+
+
+PNG
+Export
+
+
+
+
+
+
+
+
+@startuml
+actor Аналитик
+participant "Система" as system
+database "Кэш" as cache
+database "БД" as db
+
+Аналитик -> system : Открыть карту
+
+' Аэропорты (с кэшем)
+system -> cache : Запросить аэропорты
+
+alt Аэропорты в кэше
+    cache --> system : аэропорты
+else Кэш пуст
+    system -> db : Запросить аэропорты из БД
+    db --> system : аэропорты
+    system -> cache : Сохранить аэропорты в кэш
+end
+
+' Текущие позиции (без кэша)
+system -> db : Запросить текущие позиции
+db --> system : позиции
+
+system --> Аналитик : Отобразить карту
+@enduml
+PlantUML Diagram

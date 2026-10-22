@@ -1,0 +1,31 @@
+# Конфигурация линтера Redocly CLI для web_lr2/openapi.yaml
+# Запуск: make api-lint  (или npx -y @redocly/cli@1.25.0 lint --config web_lr2/redocly.yaml web_lr2/openapi.yaml)
+extends:
+  - recommended
+
+rules:
+  # Примеры запросов, ответов и параметров обязаны соответствовать схемам
+  no-invalid-media-type-examples: error
+  no-invalid-parameter-examples: error
+  no-invalid-schema-examples: error
+
+  # Обязательные элементы описания
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-summary: error
+  operation-description: error
+  operation-4xx-response: warn
+  tag-description: error
+  security-defined: error
+  no-unused-components: error
+  no-ambiguous-paths: error
+  path-parameters-defined: error
+  no-path-trailing-slash: error
+
+  # Все пути версионируются: /api/v<номер>/…
+  no-http-verbs-in-paths:
+    severity: error
+    splitIntoWords: true
+
+  # Адрес локальной разработки (localhost) в servers — намеренно
+  no-server-example.com: off

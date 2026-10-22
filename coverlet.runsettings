@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Настройки сборщика покрытия coverlet (сборщик "XPlat Code Coverage", встроен в пакет
+  coverlet.collector, уже подключённый в ATAP.BusinessLogic.Tests и ATAP.DataAccess.Tests).
+  Используется командой dotnet test с флагами collect и settings (см. TESTING.md и Makefile).
+  Формат вывода cobertura.xml содержит одновременно line rate и branch rate.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- Считаем покрытие только по коду приложения, не по самим тестовым проектам -->
+          <Exclude>[*.Tests]*,[*.IntegrationTests]*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <!-- Явно включаем branch coverage (по умолчанию coverlet и так считает ветвления,
+               параметр оставлен для наглядности требования "покрытие по ветвлениям") -->
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

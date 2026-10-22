@@ -1,0 +1,53 @@
+@page "/flights"
+
+@using ATAP.BusinessLogic.DTO
+@using ATAP.BusinessLogic.Interfaces.Services
+
+<h3>✈️ Текущие рейсы</h3>
+
+@if (flights == null)
+{
+    <p>Загрузка...</p>
+}
+else if (flights.Count == 0)
+{
+    <p>Нет активных рейсов</p>
+}
+else
+{
+    <p><strong>Всего: @flights.Count</strong></p>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #1a1a2e; color: white;">
+                <th style="padding: 8px;">Flight ID</th>
+                <th style="padding: 8px;">Callsign</th>
+                <th style="padding: 8px;">Широта</th>
+                <th style="padding: 8px;">Долгота</th>
+                <th style="padding: 8px;">Высота (м)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var f in flights.Take(30))
+            {
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px;">@f.Id</td>
+                    <td style="padding: 8px;"><b>@f.Callsign</b></td>
+                    <td style="padding: 8px;">@f.Latitude.ToString("F4")</td>
+                    <td style="padding: 8px;">@f.Longitude.ToString("F4")</td>
+                    <td style="padding: 8px;">@f.Altitude</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Inject] protected IMapService MapService { get; set; } = null!;
+
+    private List<FlightDto>? flights;
+
+    protected override async Task OnInitializedAsync()
+    {
+        flights = await MapService.GetCurrentFlightsAsync();
+    }
+}

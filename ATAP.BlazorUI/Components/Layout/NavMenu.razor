@@ -1,0 +1,51 @@
+@using ATAP.BlazorUI.Services
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="nav-brand">
+    <span style="font-size: var(--fs-title); font-weight: 700; color: #fff; letter-spacing: .5px;">✈ ATAP</span>
+</div>
+
+<div class="nav-links">
+    <a href="/" class="nav-link">Главная</a>
+    <a href="/map" class="nav-link">Карта рейсов</a>
+
+    @if (AppState.IsAuthenticated)
+    {
+        <a href="/analytics" class="nav-link">Аналитика</a>
+        <a href="/reports" class="nav-link">Мои отчёты</a>
+
+        @if (AppState.UserRole == "admin")
+        {
+            <a href="/admin" class="nav-link">Пользователи</a>
+        }
+    }
+</div>
+
+<div class="nav-footer">
+    @if (AppState.IsAuthenticated)
+    {
+        <span style="display: block; color: rgba(255,255,255,.5); font-size: 12px; margin-bottom: 4px;">
+            @AppState.CurrentUser
+            <span style="opacity:.7;">(@AppState.UserRole)</span>
+        </span>
+        <a href="/logout" class="nav-link nav-logout" style="padding: 6px 0;">Выйти</a>
+    }
+    else
+    {
+        <a href="/login" class="nav-link" style="margin-bottom: 2px;">Войти</a>
+        <a href="/register" class="nav-link">Регистрация</a>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

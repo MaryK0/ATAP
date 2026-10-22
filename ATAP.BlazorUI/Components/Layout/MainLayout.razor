@@ -1,0 +1,88 @@
+﻿@inherits LayoutComponentBase
+@using ATAP.BlazorUI.Services
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+
+@inject AppStateService AppState
+@inject ProtectedLocalStorage LocalStorage
+@implements IDisposable
+
+<div class="page">
+    <div class="sidebar">
+        @* Из NavMenu уберем rendermode, так как Layout теперь сам интерактивный *@
+        <NavMenu />
+    </div>
+    <main>
+        <div class="top-row px-4">
+            <span class="text-muted">ATAP - Air Traffic Analytics</span>
+        </div>
+        <article class="content px-4">
+            @if (isCheckingAuth)
+            {
+                // Пока читаем память браузера, показываем загрузку
+                <div style="text-align: center; margin-top: 50px;">
+                    <h3>Авторизация... ⏳</h3>
+                </div>
+            }
+            else
+            {
+                // Показываем саму страницу только когда точно знаем, кто зашел
+                @Body
+            }
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool isCheckingAuth = true;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Пытаемся восстановить сессию из браузера
+            if (!AppState.IsAuthenticated)
+            {
+                try
+                {
+                    var userResult   = await LocalStorage.GetAsync<string>("username");
+                    var roleResult   = await LocalStorage.GetAsync<string>("role");
+                    var userIdResult = await LocalStorage.GetAsync<int>("userId");
+
+                    if (userResult.Success && !string.IsNullOrEmpty(userResult.Value))
+                    {
+                        AppState.SetUser(true, userResult.Value, roleResult.Value ?? "",
+                            userIdResult.Success ? userIdResult.Value : 0);
+                    }
+                }
+                catch
+                {
+                    // Игнорируем ошибки доступа к хранилищу
+                }
+            }
+
+            // Проверка закончена, разрешаем показать страницу (@Body)
+            isCheckingAuth = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}
+
+<style>
+    .page { display: flex; height: 100vh; }
+    .sidebar { width: 250px; background: #1a1a2e; color: white; }
+    main { flex: 1; background: #f0f2f5; }
+    .top-row { background: white; padding: 1rem; border-bottom: 1px solid #ddd; }
+    .content { padding: 1.5rem; }
+    .text-muted { color: #6c757d; }
+</style>

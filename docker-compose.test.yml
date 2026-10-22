@@ -1,0 +1,28 @@
+# Тестовый стенд ATAP (WebLab «Тестирование»): отдельные экземпляры хранилищ для тестов.
+# Не пересекается с рабочим db/docker-compose.yml (другие имена, тома и порты).
+# Запуск: scripts/test-stand.sh up   (создаёт уникальный проект и свободные порты, печатает строки подключения)
+#
+# Имя проекта (-p atap-test-<id>) и порты хоста выдаются при запуске: два запуска одновременно
+# (два разработчика или два задания CI) получают разные контейнеры и не влияют друг на друга.
+services:
+  postgres-test:
+    build:
+      context: .
+      dockerfile: db/test/Dockerfile
+    image: atap-test-db:latest
+    ports:
+      - "127.0.0.1::5432"        # порт хоста назначает Docker
+    tmpfs:
+      - /var/lib/postgresql/data # состояние не сохраняется между запусками
+    shm_size: 256mb
+
+  redis-test:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]   # без записи на диск
+    ports:
+      - "127.0.0.1::6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

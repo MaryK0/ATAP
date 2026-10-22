@@ -1,0 +1,71 @@
+--- web_lr2/versions/openapi-1.0.0.yaml	2026-10-22 09:00:30.601492000 +0300
++++ web_lr2/openapi.yaml	2026-10-22 09:56:05.392183200 +0300
+@@ -2,7 +2,7 @@
+ 
+ info:
+   title: ATAP API
+-  version: 1.0.0
++  version: 1.1.0
+   summary: Публичный REST API платформы аналитики воздушного движения ATAP
+   description: |
+     Внешний REST API системы ATAP (Air Traffic Analytics Platform). Даёт доступ ко всем данным
+@@ -1197,14 +1197,27 @@
+         application/problem+json:
+           schema:
+             $ref: '#/components/schemas/Problem'
+-          example:
+-            type: https://atap.example/problems/validation-error
+-            title: Некорректные данные запроса
+-            status: 400
+-            detail: Не заполнены обязательные поля
+-            errors:
+-              - field: email
+-                message: Введите email
++          examples:
++            requiredField:
++              summary: Не заполнено обязательное поле
++              value:
++                type: https://atap.example/problems/validation-error
++                title: Некорректные данные запроса
++                status: 400
++                detail: Не заполнены обязательные поля
++                errors:
++                  - field: email
++                    message: Введите email
++            weakPassword:
++              summary: Пароль не подходит по длине
++              value:
++                type: https://atap.example/problems/validation-error
++                title: Некорректные данные запроса
++                status: 400
++                detail: Пароль не соответствует требованиям
++                errors:
++                  - field: password
++                    message: Пароль должен содержать от 8 до 128 символов
+     InvalidRequest:
+       description: Некорректные данные, неверный период или несуществующий аэропорт
+       content:
+@@ -1453,8 +1466,10 @@
+         password:
+           type: string
+           format: password
+-          minLength: 1
++          minLength: 8
++          maxLength: 128
+           writeOnly: true
++          description: От 8 до 128 символов. Верхняя граница защищает хэширование от чрезмерно длинных значений
+         role:
+           $ref: '#/components/schemas/Role'
+           description: Только для администратора; по умолчанию `analyst`
+@@ -1494,8 +1509,10 @@
+         password:
+           type: string
+           format: password
+-          minLength: 1
++          minLength: 8
++          maxLength: 128
+           writeOnly: true
++          description: От 8 до 128 символов. Верхняя граница защищает хэширование от чрезмерно длинных значений
+ 
+     UserPage:
+       allOf:
