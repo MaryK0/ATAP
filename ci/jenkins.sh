@@ -26,8 +26,11 @@ case "${1:-}" in
     "${COMPOSE[@]}" down
     ;;
   build)
-    # Запуск сборки через CLI: токен CSRF не нужен, так как доступ без аутентификации (локальный стенд)
-    curl -fs -X POST "$URL/job/atap-tests/build" -o /dev/null
+    # Jenkins защищён от CSRF даже без аутентификации: сначала получаем токен (crumb), затем запускаем сборку
+    crumb="$(curl -fs "$URL/crumbIssuer/api/json")"
+    field="$(printf '%s' "$crumb" | sed -n 's/.*"crumbRequestField":"\([^"]*\)".*//p')"
+    value="$(printf '%s' "$crumb" | sed -n 's/.*"crumb":"\([^"]*\)".*//p')"
+    curl -fs -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
     echo "Сборка запущена: $URL/job/atap-tests/" >&2
     for _ in $(seq 1 600); do
       sleep 5
