@@ -67,7 +67,7 @@ services:
       - "127.0.0.1::8080"
     healthcheck:
       # в образе aspnet нет curl: проверяем, что порт принимает соединения
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
       interval: 2s
       timeout: 3s
       retries: 60
