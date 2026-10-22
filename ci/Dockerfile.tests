@@ -1,0 +1,36 @@
+# Контейнер запуска тестов ATAP (WebLab «Тестирование», требование 1).
+# Что делает контейнер при запуске (см. ci/run-tests.sh): выкачивает репозиторий с кодом, собирает его
+# и запускает один из этапов — unit, integration или e2e — на тестовом стенде, адреса которого передаются
+# переменными окружения. Результаты (Allure JSON, TRX) пишутся в каталог /results.
+#
+# Сборка образа из корня репозитория:  docker build -f ci/Dockerfile.tests -t atap-tests:ci .
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && git config --system --add safe.directory '*'
+
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1 \
+    NUGET_PACKAGES=/nuget
+
+# Внешние зависимости (пакеты NuGet) устанавливаются при сборке образа: файлы проектов копируются
+# отдельным слоем, и при запуске тестов пакеты берутся из кэша, а не скачиваются заново.
+WORKDIR /warmup
+COPY ATAP.sln ./
+COPY ATAP.BusinessLogic/ATAP.BusinessLogic.csproj ATAP.BusinessLogic/
+COPY ATAP.DataAccess/ATAP.DataAccess.csproj ATAP.DataAccess/
+COPY ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj ATAP.BusinessLogic.Tests/
+COPY ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj ATAP.DataAccess.Tests/
+COPY ATAP.IntegrationTests/ATAP.IntegrationTests.csproj ATAP.IntegrationTests/
+COPY ATAP.E2ETests/ATAP.E2ETests.csproj ATAP.E2ETests/
+RUN for p in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.IntegrationTests ATAP.E2ETests; do \
+      dotnet restore "$p/$p.csproj"; \
+    done
+
+COPY ci/run-tests.sh /usr/local/bin/run-tests.sh
+RUN sed -i 's/\r$//' /usr/local/bin/run-tests.sh && chmod +x /usr/local/bin/run-tests.sh
+
+WORKDIR /work
+ENTRYPOINT ["/usr/local/bin/run-tests.sh"]

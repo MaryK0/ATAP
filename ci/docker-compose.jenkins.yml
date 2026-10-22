@@ -1,0 +1,26 @@
+# Jenkins для тестов ATAP. Запуск: ci/jenkins.sh up   (сам задаёт HOST_REPO — путь к репозиторию на хосте)
+# Веб-интерфейс: http://localhost:8085 (только с этого компьютера)
+services:
+  jenkins:
+    build:
+      context: ..
+      dockerfile: ci/jenkins/Dockerfile
+    image: atap-jenkins:ci
+    container_name: atap-jenkins
+    user: root                      # доступ к сокету Docker хоста
+    ports:
+      - "127.0.0.1:8085:8080"
+    environment:
+      HOST_REPO: ${HOST_REPO:?запускайте через ci/jenkins.sh}
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - type: bind
+        source: ${HOST_REPO:?}
+        target: /repo
+        read_only: true
+      - allure_history:/allure-history
+
+volumes:
+  jenkins_home:
+  allure_history:
