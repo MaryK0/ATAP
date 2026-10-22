@@ -28,8 +28,8 @@ case "${1:-}" in
   build)
     # Jenkins защищён от CSRF даже без аутентификации: сначала получаем токен (crumb), затем запускаем сборку
     crumb="$(curl -fs "$URL/crumbIssuer/api/json")"
-    field="$(printf '%s' "$crumb" | sed -n 's/.*"crumbRequestField":"\([^"]*\)".*//p')"
-    value="$(printf '%s' "$crumb" | sed -n 's/.*"crumb":"\([^"]*\)".*//p')"
+    field="$(printf '%s' "$crumb" | sed -n 's/.*"crumbRequestField":"\([^"]*\)".*/\1/p')"
+    value="$(printf '%s' "$crumb" | sed -n 's/.*"crumb":"\([^"]*\)".*/\1/p')"
     curl -fs -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
     echo "Сборка запущена: $URL/job/atap-tests/" >&2
     for _ in $(seq 1 600); do
