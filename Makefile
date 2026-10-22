@@ -5,11 +5,14 @@ BLAZOR   := ATAP.BlazorUI/ATAP.BlazorUI.csproj
 BL_TESTS := ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj
 DA_TESTS := ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj
 IT_TESTS := ATAP.IntegrationTests/ATAP.IntegrationTests.csproj
+E2E_TESTS := ATAP.E2ETests/ATAP.E2ETests.csproj
+API      := ATAP.Api/ATAP.Api.csproj
+STAND    := scripts/test-stand.sh
 CONFIG   ?= Debug
 PUBLISH  := publish/console
 
 .PHONY: all build release restore clean test test-unit test-dataaccess test-offline test-integration \
-        test-coverage test-allure run run-blazor publish help db-up db-down db-seed demo-setup \
+        test-e2e test-stand-all run-api test-coverage test-allure run run-blazor publish help db-up db-down db-seed demo-setup \
         api-lint api-scenario api-check
 
 API_SPEC     := web_lr2/openapi.yaml
@@ -52,13 +55,22 @@ test-dataaccess: build
 ## Все unit-тесты (offline: без БД, без сети — см. TESTING.md, требование 11)
 test-offline: test-unit test-dataaccess
 
-## Только интеграционные тесты (требуют поднятую PostgreSQL, см. AGENTS.md)
+## Интеграционные тесты на отдельном стенде в Docker (PostgreSQL + Redis, стенд удаляется всегда; нужен запущенный Docker)
 test-integration: build
-	$(DOTNET) test $(IT_TESTS) \
+	$(STAND) with $(DOTNET) test $(IT_TESTS) \
 		--configuration $(CONFIG) --no-build --logger "console;verbosity=normal"
 
-## Все тесты
-test: build test-offline test-integration
+## E2E-тест демонстрационного сценария по HTTP на отдельном стенде (PostgreSQL + Redis + ATAP.Api)
+test-e2e: build
+	$(STAND) with $(DOTNET) test $(E2E_TESTS) \
+		--configuration $(CONFIG) --no-build --logger "console;verbosity=normal"
+
+## Интеграционные и E2E-тесты на одном стенде после unit-тестов: unit -> integration -> e2e (после падения этапа следующие не запускаются)
+test-stand-all: build test-offline
+	$(STAND) with bash -c '$(DOTNET) test $(IT_TESTS) --configuration $(CONFIG) --no-build --logger "console;verbosity=normal" && $(DOTNET) test $(E2E_TESTS) --configuration $(CONFIG) --no-build --logger "console;verbosity=normal"'
+
+## Все тесты в порядке unit -> integration -> e2e
+test: test-stand-all
 
 ## Покрытие (строки + ветвления) unit-тестов: coverlet -> cobertura -> ReportGenerator (HTML+текст)
 # Очистка/вывод файла идут через powershell.exe намеренно: это единственная программа,
@@ -107,6 +119,10 @@ demo-setup: db-up db-seed
 ## Запуск ConsoleUI
 run:
 	$(DOTNET) run --project $(CONSOLE) --configuration $(CONFIG)
+
+## Запуск REST API (http://localhost:5080, Swagger UI — /swagger; нужны БД и Redis)
+run-api:
+	$(DOTNET) run --project $(API) --configuration $(CONFIG) --launch-profile http
 
 ## Запуск BlazorUI
 run-blazor:

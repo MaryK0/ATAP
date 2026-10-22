@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.git/
+.claude/
+TestResults/
+allure-results/
+allure-report/
+publish/
+node_modules/
+web_lr1/

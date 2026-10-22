@@ -1,14 +1,24 @@
-# Тестовый стенд ATAP (WebLab «Тестирование»): отдельные экземпляры хранилищ для тестов.
+# Тестовый стенд ATAP (WebLab «Тестирование»): отдельные экземпляры хранилищ и тестируемое приложение.
 # Не пересекается с рабочим db/docker-compose.yml (другие имена, тома и порты).
 # Запуск: scripts/test-stand.sh up   (создаёт уникальный проект и свободные порты, печатает строки подключения)
 #
 # Имя проекта (-p atap-test-<id>) и порты хоста выдаются при запуске: два запуска одновременно
 # (два разработчика или два задания CI) получают разные контейнеры и не влияют друг на друга.
+#
+# Состав стенда:
+#   postgres-test  PostgreSQL + PostGIS с готовой структурой и тестовыми данными. База atap_db — шаблон:
+#                  интеграционные тесты клонируют её для каждого тестового класса
+#   redis-test     Redis (кэш)
+#   db-e2e         разовый контейнер: создаёт из шаблона отдельную базу atap_e2e для E2E-тестов
+#   atap-api       тестируемое приложение (ATAP.Api), работает с базой atap_e2e
+
+x-testdb-build: &testdb-build
+  context: .
+  dockerfile: db/test/Dockerfile
+
 services:
   postgres-test:
-    build:
-      context: .
-      dockerfile: db/test/Dockerfile
+    build: *testdb-build
     image: atap-test-db:latest
     ports:
       - "127.0.0.1::5432"        # порт хоста назначает Docker
@@ -26,3 +36,38 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  db-e2e:
+    build: *testdb-build
+    image: atap-test-db:latest
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: test_pass
+    entrypoint: ["psql", "-h", "postgres-test", "-U", "postgres", "-d", "postgres",
+                 "-v", "ON_ERROR_STOP=1", "-c", "CREATE DATABASE atap_e2e TEMPLATE atap_db"]
+    restart: "no"
+
+  atap-api:
+    build:
+      context: .
+      dockerfile: ATAP.Api/Dockerfile
+    image: atap-api:test
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres-test;Port=5432;Database=atap_e2e;Username=postgres;Password=test_pass"
+      ConnectionStrings__Redis: "redis-test:6379,abortConnect=false,connectTimeout=2000"
+      Jwt__Key: "e2e-signing-key-0123456789abcdefghijklmnopqrstuvwxyz"
+    depends_on:
+      db-e2e:
+        condition: service_completed_successfully
+      redis-test:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1::8080"
+    healthcheck:
+      # в образе aspnet нет curl: проверяем, что порт принимает соединения
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
