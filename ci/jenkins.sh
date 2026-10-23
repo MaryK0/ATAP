@@ -33,11 +33,9 @@ case "${1:-}" in
     field="$(printf '%s' "$crumb" | sed -n 's/.*"crumbRequestField":"\([^"]*\)".*/\1/p')"
     value="$(printf '%s' "$crumb" | sed -n 's/.*"crumb":"\([^"]*\)".*/\1/p')"
     number="$(curl -fs "$URL/job/atap-tests/api/json?tree=nextBuildNumber" | sed -n 's/.*"nextBuildNumber":\([0-9]*\).*/\1/p')"
-    if [ -n "${2:-}" ]; then
-      curl -fs -b "$jar" -X POST -H "$field: $value" "$URL/job/atap-tests/buildWithParameters?SIMULATE_FAILURE=$2" -o /dev/null
-    else
-      curl -fs -b "$jar" -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
-    fi
+    # Задание параметризовано (SIMULATE_FAILURE), поэтому запуск всегда идёт через buildWithParameters
+    curl -fs -b "$jar" -X POST -H "$field: $value" \
+      "$URL/job/atap-tests/buildWithParameters?SIMULATE_FAILURE=${2:-none}" -o /dev/null
     echo "Сборка №$number запущена: $URL/job/atap-tests/$number/" >&2
     for _ in $(seq 1 600); do
       sleep 5
