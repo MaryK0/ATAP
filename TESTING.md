@@ -160,8 +160,9 @@ make test-offline   # все тесты должны пройти; имена м
 
 ### Требование 2 — тесты на обработку исключений
 
-4 теста, 2 типа исключений (`ArgumentException`, `ArgumentNullException`), через
-`Assert.ThrowsAsync<T>(() => ...)`:
+5 тестов-методов (6 прогонов: один — `[Theory]` с двумя значениями), 2 типа исключений (`ArgumentException`, `ArgumentNullException`),
+через `Assert.ThrowsAsync<T>(() => ...)`. На реальной БД ошибки проверяют ещё 3 интеграционных теста (`PostgresException` 23505 и 23514,
+`ArgumentException` сервиса). Показ: `bash scripts/demo-usecase.sh 16`.
 
 ```bash
 dotnet test ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj --filter "FullyQualifiedName~Exception"

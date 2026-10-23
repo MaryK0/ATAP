@@ -43,6 +43,34 @@ bash scripts/demo-usecase.sh all       # все варианты по поряд
 | 10 | Добавление пользователя | `… 10` | Нет отдельного метода: интерфейс регистрирует пользователя и меняет роль — оба шага проверены |
 | 11–13 | Airflow (вход, параметры, перезапуск DAG) | `… 11` | **Вне границ ATAP**: это родной интерфейс Airflow, DAG в этом репозитории нет. Тестов нет по определению |
 | 14, 15 | Сохранить отчёт, Мои отчёты | `… 14`, `… 15` | Нет на диаграмме, но реализованы и покрыты; хороший пример E2E (шаги 8–10) |
+| 16 | **Тесты на обработку исключений** (требование 2 первой лабы) | `… 16` | См. раздел ниже |
+
+## Тесты на обработку исключений
+
+Команда: `bash scripts/demo-usecase.sh 16`. То же, как в первой лабе, одной строкой:
+
+```bash
+dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~Exception"
+```
+
+| Тест | Что проверяет | Исключение |
+|---|---|---|
+| `AnalyticsServiceTests.GetCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException` | период витрины: начало позже конца | `ArgumentException` |
+| `AnalyticsServiceTests.GetAllCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException` | то же для запроса по всем аэропортам | `ArgumentException` |
+| `AnalyticsServiceTests.ExportToCsvAsync_WithNullReport_ShouldThrowException` | выгрузка CSV от пустого отчёта | `ArgumentNullException` |
+| `SavedReportServiceTests.SaveAsync_WithBlankName_ShouldThrowArgumentException` (два значения: `""` и `"   "`) | сохранение отчёта с пустым именем | `ArgumentException` |
+| `SavedReportServiceTests.SaveAsync_WithInvertedPeriod_ShouldThrowArgumentException` | сохранение отчёта с перевёрнутым периодом | `ArgumentException` |
+
+Это 5 тестов-методов, при запуске 6 прогонов (один — `[Theory]` с двумя значениями). Проверка идёт через `Assert.ThrowsAsync<T>(() => ...)`:
+тест вызывает метод и убеждается, что вылетело именно это исключение.
+
+На реальной БД (интеграционные, запускаются тем же `… 16`):
+
+| Тест | Что проверяет | Исключение |
+|---|---|---|
+| `UserRepository_Create_DuplicateUsername_Throws_IntegrationTest` | повторный логин: БД отказывает, строк не добавилось | `PostgresException`, код 23505 (уникальность) |
+| `SavedReportRepository_Create_InvertedPeriod_ViolatesCheck_IntegrationTest` | отчёт с перевёрнутым периодом: БД сама отклоняет | `PostgresException`, код 23514 (`CHECK`) |
+| `SavedReportService_Save_InvalidInput_ThrowsAndStoresNothing_IntegrationTest` | сервис отклоняет пустое имя и перевёрнутый период, в БД ничего не записано | `ArgumentException` |
 
 ## Если спросят «а покрытие хорошее?»
 

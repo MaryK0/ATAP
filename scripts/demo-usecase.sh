@@ -4,6 +4,7 @@
 #   bash scripts/demo-usecase.sh list        список вариантов (номера как на диаграмме)
 #   bash scripts/demo-usecase.sh 2           запустить тесты одного варианта использования
 #   bash scripts/demo-usecase.sh 1 2 6       несколько подряд
+#   bash scripts/demo-usecase.sh 16          тесты на обработку исключений (первая лабораторная)
 #   bash scripts/demo-usecase.sh all         все варианты по порядку
 #
 # Для каждого варианта печатается название, затем запускаются его unit-, интеграционные и E2E-тесты,
@@ -67,6 +68,10 @@ define() {
     15) TITLE="[нет на диаграмме] Мои отчёты: список и удаление (аналитик, FR-12)"
        UNIT="GetByUserAsync|DeleteAsync"; INTEG="SavedReportRepository_GetByUser|SavedReportRepository_Delete"; E2E_RUN=1
        FILES="ATAP.BusinessLogic.Tests/SavedReportServiceTests.cs, ATAP.E2ETests/DemoScenario_*.cs (шаги 9–10)" ;;
+    16) TITLE="[первая лабораторная, требование 2] Тесты на обработку исключений"
+       UNIT="ShouldThrow"; INTEG="Throws|ViolatesCheck|InvalidInput"
+       FILES="ATAP.BusinessLogic.Tests/AnalyticsServiceTests.cs, ATAP.BusinessLogic.Tests/SavedReportServiceTests.cs, ATAP.IntegrationTests/*_Throws_*, *_ViolatesCheck_*, *_InvalidInput_*"
+       NOTE="Исключения: ArgumentException (пустое имя отчёта, начало периода позже конца), ArgumentNullException (CSV от пустого отчёта); в интеграционных — ошибки БД PostgresException: уникальность логина (23505) и CHECK периода отчёта (23514)." ;;
     *) return 1 ;;
   esac
 }
@@ -106,7 +111,7 @@ run_usecase() {
 
 list_usecases() {
   echo "Варианты использования (номера как в docs/use-case-coverage.md):"
-  for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do define "$n"; printf '  %2d. %s\n' "$n" "$TITLE"; done
+  for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do define "$n"; printf '  %2d. %s\n' "$n" "$TITLE"; done
 }
 
 needs_stand() {
@@ -120,7 +125,7 @@ needs_stand() {
 case "${1:-}" in
   ""|-h|--help) sed -n '2,15p' "$0"; exit 2 ;;
   list) list_usecases; exit 0 ;;
-  all) set -- 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 ;;
+  all) set -- 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 ;;
 esac
 
 # Интеграционные и E2E-тесты требуют стенд: если он не поднят — поднимаем на время показа
