@@ -30,8 +30,9 @@ COPY ci/jenkins/plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
 # Без мастера первоначальной настройки (локальный учебный стенд, порт открыт только на localhost);
+# ALLOW_LOCAL_CHECKOUT разрешает брать код из локального репозитория (file:///repo);
 # CSP снят, чтобы отчёт Allure (HTML с JavaScript) открывался из артефактов сборки
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP="
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP= -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
 
 # Задание atap-tests создаётся автоматически: Pipeline из Jenkinsfile репозитория (file:///repo)
 COPY ci/jenkins/jobs/ /usr/share/jenkins/ref/jobs/
