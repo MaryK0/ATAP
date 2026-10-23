@@ -12,7 +12,7 @@ CONFIG   ?= Debug
 PUBLISH  := publish/console
 
 .PHONY: all build release restore clean test test-unit test-dataaccess test-offline test-integration \
-        test-e2e test-stand-all run-api test-coverage test-allure run run-blazor publish help db-up db-down db-seed demo-setup \
+        test-e2e test-stand-all run-api test-coverage test-coverage-all test-allure run run-blazor publish help db-up db-down db-seed demo-setup \
         api-lint api-scenario api-check
 
 API_SPEC     := web_lr2/openapi.yaml
@@ -86,6 +86,15 @@ test-coverage: build
 		-reports:"$(TESTRESULTS_DIR)/**/coverage.cobertura.xml" \
 		-targetdir:"$(COVERAGE_DIR)" -reporttypes:"Html;TextSummary"
 	powershell -NoProfile -Command "Get-Content $(COVERAGE_DIR)/Summary.txt"
+
+## Покрытие unit + интеграционных тестов: интеграционные идут на стенде в Docker, отчёт объединяет оба прогона
+test-coverage-all: test-coverage
+	$(STAND) with $(DOTNET) test $(IT_TESTS) --no-build \
+		--collect:"XPlat Code Coverage" --settings $(COVERLET_SETTINGS) --results-directory ./$(TESTRESULTS_DIR)/it-cov
+	$(DOTNET) tool run reportgenerator \
+		-reports:"$(TESTRESULTS_DIR)/**/coverage.cobertura.xml" \
+		-targetdir:"$(TESTRESULTS_DIR)/CoverageAll" -reporttypes:"Html;TextSummary"
+	powershell -NoProfile -Command "Get-Content $(TESTRESULTS_DIR)/CoverageAll/Summary.txt"
 
 ## Прогон тестов + генерация Allure-отчёта (требуется установленный allure CLI, см. TESTING.md)
 test-allure: build

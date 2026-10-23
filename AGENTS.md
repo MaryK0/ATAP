@@ -122,16 +122,18 @@ ATAP/
 | Собрать решение | `make build` или `dotnet build ATAP.sln -c Debug` | ✅ 0 ошибок |
 | Поднять БД и кэш | `make db-up` или `docker compose -f db/docker-compose.yml up -d` | ✅ PostgreSQL :5433, Redis :6379 |
 | Поднять БД и залить демо-рейсы | `make demo-setup` | ✅ 100 рейсов на карте |
-| Unit-тесты бизнес-логики | `make test-unit` | ✅ 49/49, без БД и сети |
+| Unit-тесты бизнес-логики | `make test-unit` | ✅ 51/51, без БД и сети |
 | Unit-тесты SqlQueryFactory | `make test-dataaccess` | ✅ 12/12, без БД и сети |
-| Все unit-тесты | `make test-offline` | ✅ 61/61 |
+| Все unit-тесты | `make test-offline` | ✅ 63/63 |
 | Интеграционные тесты | `make test-integration` (отдельный стенд в Docker, удаляется после прогона) | ✅ 36/36 |
 | E2E-тест демонстрационного сценария | `make test-e2e` (стенд: PostgreSQL, Redis, ATAP.Api) | ✅ 1/1 |
 | unit → integration → e2e на одном стенде | `make test` (= `make test-stand-all`) | ✅ |
 | REST API локально | `make run-api` → http://localhost:5080, Swagger UI `/swagger` (нужны БД и Redis) | ✅ |
 | Jenkins в Docker (CI) | `bash ci/jenkins.sh up` → http://localhost:8085; сборка: `bash ci/jenkins.sh build [integration\|e2e]` | ✅ |
 | Имитация запросов E2E и захват трафика | `bash scripts/capture-traffic.sh` → `docs/traffic/` | ✅ 15 запросов |
-| Покрытие строк и ветвлений | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
+| Покрытие строк и ветвлений (unit) | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
+| Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 74,4% |
+| Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — `docs/use-case-coverage.md`) | ✅ 74 ссылки на тесты, все найдены |
 | Allure-отчёт | `make test-allure` → `allure-report/` (нужен `npm i -g allure-commandline`) | ✅ |
 | Веб-приложение | `make run-blazor` → http://localhost:5075 (нужны БД и Redis) | ✅ |
 | ConsoleUI | `make run` (нужна БД) | ✅ |

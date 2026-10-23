@@ -123,7 +123,7 @@ ATAP.DataAccess.Tests/
 единственный юнит-тестируемый без БД.
 
 ```bash
-dotnet test ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj   # 49 тестов
+dotnet test ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj   # 51 тест
 dotnet test ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj         # 12 тестов
 ```
 
@@ -341,7 +341,7 @@ make test-integration      # упадёt без БД — и это ожидае�
 ```bash
 make test-offline
 ```
-Текущий статус: `ATAP.BusinessLogic.Tests` 49/49 ✅, `ATAP.DataAccess.Tests` 12/12 ✅.
+Текущий статус: `ATAP.BusinessLogic.Tests` 51/51 ✅, `ATAP.DataAccess.Tests` 12/12 ✅.
 
 ### Требование 14 — покрытие по строкам и ветвлениям из CLI
 
@@ -349,13 +349,31 @@ make test-offline
 make test-coverage
 ```
 
-| Сборка | Line coverage | Branch coverage |
-|---|---|---|
-| `ATAP.BusinessLogic` (все 5 сервисов) | **100%** | **100%** |
-| `ATAP.DataAccess` → `SqlQueryFactory` | **100%** | **100%** |
-| `ATAP.DataAccess` целиком (с Postgres/Mongo/Redis) | 24.2% | 4.3% (ожидаемо — вне объёма unit-тестов) |
+> **Исправление измерения (23.10.2026).** Прежние цифры (`BusinessLogic` 100% / 100%) были завышены: настройка
+> `coverlet.runsettings` исключала код с атрибутом `CompilerGenerated`, а тела всех `async`-методов компилятор превращает
+> именно в такой код. Из отчёта выпадали основные методы сервисов. Исключение убрано; ниже — цифры после исправления.
 
-HTML-отчёт: `TestResults/CoverageReport/index.html` (генерируется, не коммитится).
+**Unit-тесты** (`make test-coverage`):
+
+| Сборка | Line coverage |
+|---|---|
+| `ATAP.BusinessLogic` (все сервисы) | **99%** |
+| `ATAP.DataAccess` → `SqlQueryFactory` | **100%** |
+| `ATAP.DataAccess` целиком | 6,2% — репозитории работают с БД и проверяются интеграционными тестами |
+
+**Интеграционные тесты и объединённое покрытие** (`make test-coverage-all`):
+
+| Сборка | Только интеграционные | Unit + интеграционные |
+|---|---|---|
+| `ATAP.BusinessLogic` | 94,8% | **97,7%** |
+| `ATAP.DataAccess`: `PostgresUserRepository`, `PostgresAnalyticsRepository`, `PostgresSavedReportRepository`, `PostgresMapRepository`, `RedisCacheRepository` | **100%** каждый | **100%** |
+| `ATAP.DataAccess` целиком | 60,9% | 60,9% |
+| Всего по обеим сборкам | линии 73,3%, ветви 52,5% | линии **74,4%**, ветви **55,5%** (111 из 200) |
+
+Не покрыты: четыре `Mongo*Repository` (MongoDB тестами не охвачен сознательно — запасное хранилище) и `SqlQueries` (статический класс запросов,
+который приложением не используется). `ATAP.Api`, `ATAP.BlazorUI` и `ATAP.ConsoleUI` в расчёт покрытия не входят.
+
+HTML-отчёт: `TestResults/CoverageReport/index.html` (генерируется, не коммитится). Покрытие вариантов использования — [`docs/use-case-coverage.md`](docs/use-case-coverage.md).
 
 ### Требование 15 — регрессия, рефакторинг, поддержка
 
@@ -428,7 +446,7 @@ production-класса (`ATAP.BusinessLogic/Services/*.cs`, `ATAP.DataAccess/Fa
 вызов метода на один тест-кейс, тот же инвариант проверяется в двух независимых прогонах вместо
 одного совмещённого.
 
-**Результат:** 49 + 12 = 61 unit-тест (было 49 + 11 = 60).
+**Результат:** 49 + 12 = 61 unit-тест (было 49 + 11 = 60). Позднее добавлены два теста метода `GetAllCongestionAsync` — 51 + 12 = 63.
 
 ## 8. Лабораторная «Тестирование»: стенд, интеграционные и E2E-тесты, CI
 
@@ -512,7 +530,7 @@ Jenkins (контейнер atap-jenkins, http://localhost:8085)
 | 13 | без GUI в E2E | E2E по HTTP |
 | 14 | повторные запуски дают тот же результат | три прогона подряд на одном стенде — 36/36, после них остаётся только шаблон |
 | 15 | разработчики не мешают друг другу | у каждого запуска свой проект compose и свободные порты; проверено двумя стендами одновременно и двумя процессами тестов на одном стенде |
-| 16 | тесты проходят | unit 61/61, integration 36/36, E2E 1/1 |
+| 16 | тесты проходят | unit 63/63, integration 36/36, E2E 1/1 |
 | 17 | один файл — один тест, суффикс | `*_IntegrationTest.cs`, `*_E2ETest.cs` |
 
 ### 8.6 Находки при подготовке
@@ -544,7 +562,7 @@ bash scripts/capture-traffic.sh        # стенд → mitmproxy → curl-сц�
 
 | Проверка | Результат |
 |---|---|
-| Unit | 61/61 (49 + 12) |
+| Unit | 63/63 (51 + 12) |
 | Интеграционные на стенде | 36/36; три прогона подряд; два процесса на одном стенде; два стенда одновременно |
 | E2E на стенде | 1/1; с неверным паролем падает |
 | Скрипт `e2e-curl.sh` через прокси | 15 запросов, все коды совпали |

@@ -13,7 +13,7 @@
           <Format>cobertura</Format>
           <!-- Считаем покрытие только по коду приложения, не по самим тестовым проектам -->
           <Exclude>[*.Tests]*,[*.IntegrationTests]*</Exclude>
-          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute</ExcludeByAttribute>
           <!-- Явно включаем branch coverage (по умолчанию coverlet и так считает ветвления,
                параметр оставлен для наглядности требования "покрытие по ветвлениям") -->
           <IncludeTestAssembly>false</IncludeTestAssembly>

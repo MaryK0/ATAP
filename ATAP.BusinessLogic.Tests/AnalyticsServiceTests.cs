@@ -51,6 +51,38 @@ public class AnalyticsServiceTests
 
     [Fact]
     [AllureFeature("Congestion report")]
+    public async Task GetAllCongestionAsync_ShouldReturnReportForAllAirports()
+    {
+        // Arrange (запрос по всем аэропортам: airportId в отчёте — 0, записи берутся без фильтра по аэропорту)
+        var mockRepo = new MockAnalyticsRepository();
+        var service = new AnalyticsService(mockRepo);
+
+        // Act
+        var result = await service.GetAllCongestionAsync(DateTime.Today, DateTime.Today.AddDays(1));
+
+        // Assert
+        Assert.Equal(0, result.AirportId);
+        Assert.Equal(2, result.Entries.Count);
+        Assert.Equal(1, result.DepartureCount);
+        Assert.Equal(1, result.ArrivalCount);
+        Assert.All(result.Entries, e => Assert.Equal(1, e.AirportId));
+    }
+
+    [Fact]
+    [AllureFeature("Congestion report")]
+    public async Task GetAllCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException()
+    {
+        // Arrange (первое невалидное значение за границей: start = end + 1 день)
+        var mockRepo = new MockAnalyticsRepository();
+        var service = new AnalyticsService(mockRepo);
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => service.GetAllCongestionAsync(DateTime.Today.AddDays(1), DateTime.Today));
+    }
+
+    [Fact]
+    [AllureFeature("Congestion report")]
     public async Task GetCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException()
     {
         // Arrange (первое невалидное значение за границей: start = end + 1 день)
