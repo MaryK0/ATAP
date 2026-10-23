@@ -365,10 +365,10 @@ make test-coverage
 
 | Сборка | Только интеграционные | Unit + интеграционные |
 |---|---|---|
-| `ATAP.BusinessLogic` | 94,8% | **97,7%** |
+| `ATAP.BusinessLogic` | 94,8% | **99,6%** |
 | `ATAP.DataAccess`: `PostgresUserRepository`, `PostgresAnalyticsRepository`, `PostgresSavedReportRepository`, `PostgresMapRepository`, `RedisCacheRepository` | **100%** каждый | **100%** |
 | `ATAP.DataAccess` целиком | 60,9% | 60,9% |
-| Всего по обеим сборкам | линии 73,3%, ветви 52,5% | линии **74,4%**, ветви **55,5%** (111 из 200) |
+| Всего по обеим сборкам | линии 73,3%, ветви 52,5% | линии **75,1%**, ветви **56,5%** (113 из 200) |
 
 Не покрыты: четыре `Mongo*Repository` (MongoDB тестами не охвачен сознательно — запасное хранилище) и `SqlQueries` (статический класс запросов,
 который приложением не используется). `ATAP.Api`, `ATAP.BlazorUI` и `ATAP.ConsoleUI` в расчёт покрытия не входят.

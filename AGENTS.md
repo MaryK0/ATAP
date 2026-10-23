@@ -132,7 +132,7 @@ ATAP/
 | Jenkins в Docker (CI) | `bash ci/jenkins.sh up` → http://localhost:8085; сборка: `bash ci/jenkins.sh build [integration\|e2e]` | ✅ |
 | Имитация запросов E2E и захват трафика | `bash scripts/capture-traffic.sh` → `docs/traffic/` | ✅ 15 запросов |
 | Покрытие строк и ветвлений (unit) | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
-| Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 74,4% |
+| Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 75,1% |
 | Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — `docs/use-case-coverage.md`) | ✅ 74 ссылки на тесты, все найдены |
 | Allure-отчёт | `make test-allure` → `allure-report/` (нужен `npm i -g allure-commandline`) | ✅ |
 | Веб-приложение | `make run-blazor` → http://localhost:5075 (нужны БД и Redis) | ✅ |
