@@ -27,10 +27,12 @@ case "${1:-}" in
     ;;
   build)
     # Jenkins защищён от CSRF даже без аутентификации: сначала получаем токен (crumb), затем запускаем сборку
-    crumb="$(curl -fs "$URL/crumbIssuer/api/json")"
+    # Токен привязан к сессии Jenkins: cookie из запроса токена передаём и в запросе запуска
+    jar="$(mktemp)"; trap 'rm -f "$jar"' EXIT
+    crumb="$(curl -fs -c "$jar" "$URL/crumbIssuer/api/json")"
     field="$(printf '%s' "$crumb" | sed -n 's/.*"crumbRequestField":"\([^"]*\)".*/\1/p')"
     value="$(printf '%s' "$crumb" | sed -n 's/.*"crumb":"\([^"]*\)".*/\1/p')"
-    curl -fs -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
+    curl -fs -b "$jar" -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
     echo "Сборка запущена: $URL/job/atap-tests/" >&2
     for _ in $(seq 1 600); do
       sleep 5
