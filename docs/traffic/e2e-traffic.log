@@ -1,0 +1,578 @@
+[03:10:23.034] reverse proxy to http://atap-api:8080 listening at *:8888.
+[03:10:23.790][172.21.0.1:38606] client connect
+[03:10:23.793][172.21.0.1:38606] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:38606: GET http://atap-api:8080/api/v1/airports
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+
+ << 200 OK 616b
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+
+    {
+        "items": [
+            {
+                "analysisRadius": 10000,
+                "city": "Moscow",
+                "countryCode": "RU",
+                "elevation": null,
+                "iataCode": "SVO",
+                "icaoCode": "UUEE",
+                "id": 1,
+                "latitude": 55.972,
+                "longitude": 37.415,
+                "name": "Sheremetyevo",
+                "type": "large"
+            },
+            {
+                "analysisRadius": 10000,
+                "city": "Moscow",
+                "countryCode": "RU",
+                "elevation": null,
+                "iataCode": "DME",
+                "icaoCode": "UUDD",
+                "id": 2,
+                "latitude": 55.409,
+                "longitude": 37.902,
+                "name": "Domodedovo",
+                "type": "large"
+            },
+            {
+                "analysisRadius": 10000,
+                "city": "Moscow",
+                "countryCode": "RU",
+                "elevation": null,
+                "iataCode": "VKO",
+                "icaoCode": "UUWW",
+                "id": 3,
+                "latitude": 55.592,
+                "longitude": 37.267,
+                "name": "Vnukovo",
+                "type": "medium"
+            }
+        ],
+        "limit": 50,
+        "offset": 0,
+        "total": 3
+    }
+
+[03:10:24.212][172.21.0.1:38606] client disconnect
+[03:10:24.212][172.21.0.1:38606] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.371][172.21.0.1:38622] client connect
+[03:10:24.373][172.21.0.1:38622] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:38622: GET http://atap-api:8080/api/v1/airports?limit=100
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+
+    limit: 100
+
+ << 200 OK 617b
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+
+    {
+        "items": [
+            {
+                "analysisRadius": 10000,
+                "city": "Moscow",
+                "countryCode": "RU",
+                "elevation": null,
+                "iataCode": "SVO",
+                "icaoCode": "UUEE",
+                "id": 1,
+                "latitude": 55.972,
+                "longitude": 37.415,
+                "name": "Sheremetyevo",
+                "type": "large"
+            },
+            {
+                "analysisRadius": 10000,
+                "city": "Moscow",
+                "countryCode": "RU",
+                "elevation": null,
+                "iataCode": "DME",
+                "icaoCode": "UUDD",
+                "id": 2,
+                "latitude": 55.409,
+                "longitude": 37.902,
+                "name": "Domodedovo",
+                "type": "large"
+            },
+            {
+                "analysisRadius": 10000,
+                "city": "Moscow",
+                "countryCode": "RU",
+                "elevation": null,
+                "iataCode": "VKO",
+                "icaoCode": "UUWW",
+                "id": 3,
+                "latitude": 55.592,
+                "longitude": 37.267,
+                "name": "Vnukovo",
+                "type": "medium"
+            }
+        ],
+        "limit": 100,
+        "offset": 0,
+        "total": 3
+    }
+
+[03:10:24.399][172.21.0.1:38622] client disconnect
+[03:10:24.400][172.21.0.1:38622] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.445][172.21.0.1:51734] client connect
+[03:10:24.447][172.21.0.1:51734] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51734: GET http://atap-api:8080/api/v1/flights/current
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+
+ << 200 OK 264b
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Cache-Control: max-age=300
+    ETag: "58e6933e294b0faa"
+    Transfer-Encoding: chunked
+
+    [
+        {
+            "altitude": 10000,
+            "callsign": "AFL123",
+            "flightId": 1,
+            "latitude": 55.752,
+            "longitude": 37.615
+        },
+        {
+            "altitude": 3200,
+            "callsign": "BAW001",
+            "flightId": 2,
+            "latitude": 51.47,
+            "longitude": -0.454
+        },
+        {
+            "altitude": 2800,
+            "callsign": "DLH002",
+            "flightId": 3,
+            "latitude": 50.038,
+            "longitude": 8.562
+        }
+    ]
+
+[03:10:24.474][172.21.0.1:51734] client disconnect
+[03:10:24.474][172.21.0.1:51734] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.586][172.21.0.1:51736] client connect
+[03:10:24.588][172.21.0.1:51736] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51736: GET http://atap-api:8080/api/v1/flights/current
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    If-None-Match: "58e6933e294b0faa"
+
+ << 304 Not Modified 0b
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Cache-Control: max-age=300
+    ETag: "58e6933e294b0faa"
+
+[03:10:24.598][172.21.0.1:51736] client disconnect
+[03:10:24.599][172.21.0.1:51736] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.646][172.21.0.1:51752] client connect
+[03:10:24.649][172.21.0.1:51752] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51752: GET http://atap-api:8080/api/v1/congestion?airportId=1&dateFrom=2026-06-10&dateTo=2026-06-10
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+
+    airportId: 1
+    dateFrom:  2026-06-10
+    dateTo:    2026-06-10
+
+ << 401 Unauthorized 154b
+    Content-Type: application/problem+json
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+    WWW-Authenticate: Bearer
+
+    {
+        "instance": "/api/v1/congestion",
+        "status": 401,
+        "title": "Требуется вход в систему",
+        "type": "https://atap.example/problems/unauthorized"
+    }
+
+[03:10:24.668][172.21.0.1:51752] client disconnect
+[03:10:24.668][172.21.0.1:51752] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.711][172.21.0.1:51766] client connect
+[03:10:24.713][172.21.0.1:51766] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51766: POST http://atap-api:8080/api/v1/sessions
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Content-Type: application/json
+    Content-Length: 51
+
+    {
+        "password": "wrong-password",
+        "username": "analyst1"
+    }
+
+ << 401 Unauthorized 161b
+    Content-Type: application/problem+json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+    WWW-Authenticate: Bearer
+
+    {
+        "instance": "/api/v1/sessions",
+        "status": 401,
+        "title": "Неверный логин или пароль",
+        "type": "https://atap.example/problems/invalid-credentials"
+    }
+
+[03:10:24.757][172.21.0.1:51766] client disconnect
+[03:10:24.758][172.21.0.1:51766] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.808][172.21.0.1:51782] client connect
+[03:10:24.810][172.21.0.1:51782] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51782: POST http://atap-api:8080/api/v1/sessions
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Content-Type: application/json
+    Content-Length: 49
+
+    {
+        "password": "Analyst#2026",
+        "username": "analyst1"
+    }
+
+ << 201 Created 469b
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Location: /api/v1/sessions/current
+    Transfer-Encoding: chunked
+
+    {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU",
+        "expiresIn": 3600,
+        "tokenType": "Bearer",
+        "user": {
+            "createdAt": "2026-10-23T03:10:12.594128Z",
+            "email": "analyst1@atap.com",
+            "id": 2,
+            "role": "analyst",
+            "username": "analyst1"
+        }
+    }
+
+[03:10:24.841][172.21.0.1:51782] client disconnect
+[03:10:24.842][172.21.0.1:51782] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:24.962][172.21.0.1:51796] client connect
+[03:10:24.964][172.21.0.1:51796] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51796: GET http://atap-api:8080/api/v1/congestion?airportId=1&dateFrom=2026-06-10&dateTo=2026-06-10
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+    airportId: 1
+    dateFrom:  2026-06-10
+    dateTo:    2026-06-10
+
+ << 200 OK 1.0k
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+
+    {
+        "airportId": 1,
+        "dateFrom": "2026-06-10",
+        "dateTo": "2026-06-10",
+        "items": [
+            {
+                "airportId": 1,
+                "callsign": "AFL123",
+                "durationSeconds": 301,
+                "entryTime": "2026-06-10T23:59:59Z",
+                "exitTime": "2026-06-11T00:05:00Z",
+                "flightId": 1,
+                "id": 5,
+                "isArrival": true,
+                "isDeparture": false,
+                "maxAltitudeInZone": 450,
+                "minAltitudeInZone": 180
+            },
+            {
+                "airportId": 1,
+                "callsign": "DLH002",
+                "durationSeconds": 600,
+                "entryTime": "2026-06-10T12:30:00Z",
+                "exitTime": "2026-06-10T12:40:00Z",
+                "flightId": 3,
+                "id": 4,
+                "isArrival": true,
+                "isDeparture": false,
+                "maxAltitudeInZone": 600,
+                "minAltitudeInZone": 200
+            },
+            {
+                "airportId": 1,
+                "callsign": "BAW001",
+                "durationSeconds": 120,
+                "entryTime": "2026-06-10T07:06:00Z",
+                "exitTime": "2026-06-10T07:08:00Z",
+                "flightId": 2,
+                "id": 3,
+                "isArrival": false,
+                "isDeparture": true,
+                "maxAltitudeInZone": 480,
+                "minAltitudeInZone": 250
+            },
+            {
+                "airportId": 1,
+                "callsign": "AFL123",
+                "durationSeconds": 180,
+                "entryTime": "2026-06-10T00:00:00Z",
+                "exitTime": "2026-06-10T00:03:00Z",
+                "flightId": 1,
+                "id": 2,
+                "isArrival": true,
+                "isDeparture": false,
+                "maxAltitudeInZone": 540,
+                "minAltitudeInZone": 310
+            }
+        ],
+        "limit": 50,
+        "offset": 0,
+        "summary": {
+            "arrivals": 3,
+            "departures": 1
+        },
+        "total": 4
+    }
+
+[03:10:25.058][172.21.0.1:51796] client disconnect
+[03:10:25.058][172.21.0.1:51796] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.111][172.21.0.1:51798] client connect
+[03:10:25.113][172.21.0.1:51798] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51798: GET http://atap-api:8080/api/v1/congestion?airportId=1&dateFrom=2026-06-10&dateTo=2026-06-10
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+    Accept: text/csv
+
+    airportId: 1
+    dateFrom:  2026-06-10
+    dateTo:    2026-06-10
+
+ << 200 OK 436b
+    Content-Length: 436
+    Content-Type: text/csv; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:24 GMT
+    Server: Kestrel
+    Content-Disposition: attachment; filename=congestion_UUEE_2026-06-10_2026-06-10.csv; filename*=UTF-8''congestion_UUEE_2026-06-10_2026-06-10.csv
+
+    id,airportId,flightId,callsign,entryTime,exitTime,durationSeconds,isDeparture,isArrival,maxAltitudeInZone,minAltitudeInZone
+    5,1,1,AFL123,2026-06-10T23:59:59Z,2026-06-11T00:05:00Z,301,false,true,450,180
+    4,1,3,DLH002,2026-06-10T12:30:00Z,2026-06-10T12:40:00Z,600,false,true,600,200
+    3,1,2,BAW001,2026-06-10T07:06:00Z,2026-06-10T07:08:00Z,120,true,false,480,250
+    2,1,1,AFL123,2026-06-10T00:00:00Z,2026-06-10T00:03:00Z,180,false,true,540,310
+
+[03:10:25.134][172.21.0.1:51798] client disconnect
+[03:10:25.134][172.21.0.1:51798] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.190][172.21.0.1:51812] client connect
+[03:10:25.192][172.21.0.1:51812] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51812: GET http://atap-api:8080/api/v1/congestion?airportId=1&dateFrom=2026-06-11&dateTo=2026-06-10
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+    airportId: 1
+    dateFrom:  2026-06-11
+    dateTo:    2026-06-10
+
+ << 400 Bad Request 196b
+    Content-Type: application/problem+json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+
+    {
+        "instance": "/api/v1/congestion",
+        "status": 400,
+        "title": "Дата начала не может быть позже даты окончания",
+        "type": "https://atap.example/problems/invalid-period"
+    }
+
+[03:10:25.223][172.21.0.1:51812] client disconnect
+[03:10:25.224][172.21.0.1:51812] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.268][172.21.0.1:51816] client connect
+[03:10:25.271][172.21.0.1:51816] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51816: POST http://atap-api:8080/api/v1/reports
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+    Content-Type: application/json
+    Content-Length: 98
+
+    {
+        "airportId": 1,
+        "dateFrom": "2026-06-10",
+        "dateTo": "2026-06-10",
+        "name": "curl: Sheremetyevo, 10 June"
+    }
+
+ << 201 Created 176b
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+    Location: /api/v1/reports/3
+    Transfer-Encoding: chunked
+
+    {
+        "airportId": 1,
+        "airportName": "Sheremetyevo",
+        "createdAt": "2026-10-23T03:10:25.309919Z",
+        "dateFrom": "2026-06-10",
+        "dateTo": "2026-06-10",
+        "id": 3,
+        "name": "curl: Sheremetyevo, 10 June"
+    }
+
+[03:10:25.326][172.21.0.1:51816] client disconnect
+[03:10:25.327][172.21.0.1:51816] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.450][172.21.0.1:51828] client connect
+[03:10:25.452][172.21.0.1:51828] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51828: GET http://atap-api:8080/api/v1/reports
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+ << 200 OK 590b
+    Content-Type: application/json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+
+    {
+        "items": [
+            {
+                "airportId": 1,
+                "airportName": "Sheremetyevo",
+                "createdAt": "2026-10-23T03:10:25.309919Z",
+                "dateFrom": "2026-06-10",
+                "dateTo": "2026-06-10",
+                "id": 3,
+                "name": "curl: Sheremetyevo, 10 June"
+            },
+            {
+                "airportId": 1,
+                "airportName": "Sheremetyevo",
+                "createdAt": "2026-10-23T03:10:12.60907Z",
+                "dateFrom": "2026-06-04",
+                "dateTo": "2026-06-10",
+                "id": 2,
+                "name": "Шереметьево, неделя"
+            },
+            {
+                "airportId": 1,
+                "airportName": "Sheremetyevo",
+                "createdAt": "2026-10-23T03:10:12.608332Z",
+                "dateFrom": "2026-06-10",
+                "dateTo": "2026-06-10",
+                "id": 1,
+                "name": "Шереметьево, 10 июня"
+            }
+        ],
+        "limit": 50,
+        "offset": 0,
+        "total": 3
+    }
+
+[03:10:25.470][172.21.0.1:51828] client disconnect
+[03:10:25.471][172.21.0.1:51828] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.519][172.21.0.1:51844] client connect
+[03:10:25.522][172.21.0.1:51844] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51844: DELETE http://atap-api:8080/api/v1/reports/3
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+ << 204 No Content 0b
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+
+[03:10:25.545][172.21.0.1:51844] client disconnect
+[03:10:25.546][172.21.0.1:51844] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.605][172.21.0.1:51852] client connect
+[03:10:25.608][172.21.0.1:51852] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51852: GET http://atap-api:8080/api/v1/reports/3
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+ << 404 Not Found 133b
+    Content-Type: application/problem+json; charset=utf-8
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+
+    {
+        "instance": "/api/v1/reports/3",
+        "status": 404,
+        "title": "Отчёт не найден",
+        "type": "https://atap.example/problems/not-found"
+    }
+
+[03:10:25.631][172.21.0.1:51852] client disconnect
+[03:10:25.632][172.21.0.1:51852] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.700][172.21.0.1:51866] client connect
+[03:10:25.703][172.21.0.1:51866] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51866: DELETE http://atap-api:8080/api/v1/sessions/current
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+ << 204 No Content 0b
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+
+[03:10:25.717][172.21.0.1:51866] client disconnect
+[03:10:25.718][172.21.0.1:51866] server disconnect atap-api:8080 (172.21.0.4:8080)
+[03:10:25.786][172.21.0.1:51872] client connect
+[03:10:25.788][172.21.0.1:51872] server connect atap-api:8080 (172.21.0.4:8080)
+172.21.0.1:51872: GET http://atap-api:8080/api/v1/reports
+    Host: atap-api:8080
+    User-Agent: curl/8.7.1
+    Accept: */*
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6ImFuYWx5c3QxIiwicm9sZSI6ImFuYWx5c3QiLCJqdGkiOiJhMGIyMzg1NmQ4NmY0MDM0OTI5YjE1M2Q4NjJhMTY3OCIsIm5iZiI6MTc5MjcyNTAyNCwiZXhwIjoxNzkyNzI4NjI0LCJpc3MiOiJhdGFwLWFwaSIsImF1ZCI6ImF0YXAtYXBpIn0.dOZeFm7I9xdGS62BbjwfLenwvI3qCdIN9CA8hdyZlJU
+
+ << 401 Unauthorized 151b
+    Content-Type: application/problem+json
+    Date: Fri, 23 Oct 2026 03:10:25 GMT
+    Server: Kestrel
+    Transfer-Encoding: chunked
+    WWW-Authenticate: Bearer
+
+    {
+        "instance": "/api/v1/reports",
+        "status": 401,
+        "title": "Требуется вход в систему",
+        "type": "https://atap.example/problems/unauthorized"
+    }
+

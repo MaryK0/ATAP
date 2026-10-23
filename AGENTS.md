@@ -88,10 +88,18 @@ ATAP/
 ├─ ATAP.ConsoleUI/              # технологический UI: меню по ролям, Serilog
 ├─ ATAP.BusinessLogic.Tests/    # unit-тесты бизнес-логики (моки, Builders, Mothers, случайный порядок)
 ├─ ATAP.DataAccess.Tests/       # unit-тесты SqlQueryFactory без БД
-├─ ATAP.IntegrationTests/       # интеграционные тесты с PostgreSQL (Trait Category=Integration)
+├─ ATAP.IntegrationTests/       # 36 интеграционных тестов на стенде (PostgreSQL + Redis), один файл — один тест
+├─ ATAP.E2ETests/               # E2E-тест демонстрационного сценария по HTTP
+├─ ATAP.Api/                    # REST API (ASP.NET Core 8) по web_lr2/openapi.yaml: срез WebLab#3, Swagger UI
+├─ ci/                          # контейнер запуска тестов (Dockerfile.tests, run-tests.sh), Jenkins (jenkins/), скрипты этапов
+├─ Jenkinsfile                  # конвейер unit -> integration -> e2e, отчёт Allure с историей
+├─ docker-compose.test.yml      # тестовый стенд: postgres-test, redis-test, db-e2e, atap-api
+├─ scripts/                     # test-stand.sh (стенд), e2e-curl.sh, capture-traffic.sh
+├─ docs/traffic/                # журнал трафика E2E-сценария (mitmproxy)
 ├─ db/
 │   ├─ create_tables.sql        #   DDL: stg/dds/mart, CHECK, роли, процедуры, сиды
 │   ├─ add_saved_reports.sql
+│   ├─ test/                    #   образ тестовой БД: Dockerfile, детерминированные тестовые данные
 │   ├─ seed_demo_flights.sql    #   100 демо-рейсов для карты
 │   ├─ docker-compose.yml       #   PostgreSQL + PostGIS, Redis
 │   └─ migrate_to_mongo.py
@@ -117,7 +125,12 @@ ATAP/
 | Unit-тесты бизнес-логики | `make test-unit` | ✅ 49/49, без БД и сети |
 | Unit-тесты SqlQueryFactory | `make test-dataaccess` | ✅ 12/12, без БД и сети |
 | Все unit-тесты | `make test-offline` | ✅ 61/61 |
-| Интеграционные тесты | `make test-integration` (нужна поднятая БД) | ✅ 5/5 |
+| Интеграционные тесты | `make test-integration` (отдельный стенд в Docker, удаляется после прогона) | ✅ 36/36 |
+| E2E-тест демонстрационного сценария | `make test-e2e` (стенд: PostgreSQL, Redis, ATAP.Api) | ✅ 1/1 |
+| unit → integration → e2e на одном стенде | `make test` (= `make test-stand-all`) | ✅ |
+| REST API локально | `make run-api` → http://localhost:5080, Swagger UI `/swagger` (нужны БД и Redis) | ✅ |
+| Jenkins в Docker (CI) | `bash ci/jenkins.sh up` → http://localhost:8085; сборка: `bash ci/jenkins.sh build [integration\|e2e]` | ✅ |
+| Имитация запросов E2E и захват трафика | `bash scripts/capture-traffic.sh` → `docs/traffic/` | ✅ 15 запросов |
 | Покрытие строк и ветвлений | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
 | Allure-отчёт | `make test-allure` → `allure-report/` (нужен `npm i -g allure-commandline`) | ✅ |
 | Веб-приложение | `make run-blazor` → http://localhost:5075 (нужны БД и Redis) | ✅ |
@@ -135,7 +148,7 @@ ATAP/
 
 | Часть | Планируемая проверка |
 |---|---|
-| REST API (WebLab#3) | контрактные тесты реального сервера по [`web_lr2/openapi.yaml`](web_lr2/openapi.yaml): каждый `operationId` — успешный ответ и описанные ошибки; сценарии `web_lr2/mock-scenario.mjs` можно направить на реальный сервер через `MOCK_URL` |
+| REST API (WebLab#3) | реализован срез (10 из 23 операций), E2E-тест проходит; остальные операции и контрактные тесты по [`web_lr2/openapi.yaml`](web_lr2/openapi.yaml): каждый `operationId` — успешный ответ и описанные ошибки; сценарии `web_lr2/mock-scenario.mjs` можно направить на реальный сервер через `MOCK_URL` |
 | Dockerfile веб-приложения (ADR-0003) | `docker compose up` поднимает приложение, БД и Redis; `GET /` → 200 |
 | Airflow DAG (FR-17) | ошибка OpenSky API → запись в лог, следующий цикл повторяет загрузку |
 | Хэш паролей PBKDF2 (ADR-0004) | unit-тест: одинаковый пароль у двух пользователей → разные хэши; в `dds.users` нет паролей в открытом виде |
