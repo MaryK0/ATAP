@@ -96,7 +96,10 @@ run_usecase() {
   run_project "$DA" "$DA_F" "unit: SQL-запросы" || fail=1
   if [ -n "$INTEG" ]; then run_project "$IT" "$INTEG" "интеграционные: PostgreSQL и Redis" || fail=1; fi
   if [ "$E2E_RUN" = "1" ]; then run_project "$E2E" "DemoScenario" "E2E: сценарий по HTTP (11 шагов)" || fail=1; fi
-  if [ -z "$UNIT$DA_F$INTEG" ] && [ "$E2E_RUN" = "0" ]; then echo "  (тестов нет, см. «Важно»)"; fi
+  if [ -z "$UNIT$DA_F$INTEG" ] && [ "$E2E_RUN" = "0" ]; then
+    echo " Итог: вариант вне границ системы — тестов нет (причина выше)"
+    return 0
+  fi
   [ "$fail" -eq 0 ] && echo " Итог: все тесты варианта пройдены" || echo " Итог: ЕСТЬ ПАДЕНИЯ"
   return $fail
 }
