@@ -15,6 +15,13 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
 
+    parameters {
+        // Только для демонстрации: этап завершается с ошибкой после прогона тестов — следующие этапы
+        // не запускаются, в отчёте они помечены как skipped, стенд всё равно удаляется
+        choice(name: 'SIMULATE_FAILURE', choices: ['none', 'integration', 'e2e'],
+               description: 'Имитировать падение этапа (проверка требований 8 и 10)')
+    }
+
     stages {
         stage('Образ с тестами') {
             steps { sh 'bash ci/prepare.sh' }

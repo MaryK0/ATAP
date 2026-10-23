@@ -49,6 +49,15 @@ prepare() {
   fi
 }
 
+# Демонстрационный хук: SIMULATE_FAILURE=<этап> заставляет этап завершиться с ошибкой (код выхода 1)
+simulate_failure() {
+  if [ "${SIMULATE_FAILURE:-none}" = "$1" ]; then
+    log "Имитация падения этапа $1 (SIMULATE_FAILURE)"
+    return 0
+  fi
+  return 1
+}
+
 # Забирает Allure-результаты из каталогов сборки и убирает их, чтобы следующий этап не дублировал записи
 collect_allure() {
   local dir
@@ -116,6 +125,7 @@ case "$MODE" in
     prepare
     code=0
     run_project integration "${PROJECTS[integration]}" || code=$?
+    simulate_failure integration && code=1
     collect_allure
     echo "$code" > "$RESULTS_DIR/status/integration"
     exit "$code"
@@ -125,6 +135,7 @@ case "$MODE" in
     prepare
     code=0
     run_project e2e "${PROJECTS[e2e]}" || code=$?
+    simulate_failure e2e && code=1
     collect_allure
     echo "$code" > "$RESULTS_DIR/status/e2e"
     exit "$code"

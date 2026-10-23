@@ -2,7 +2,7 @@
 # Управление Jenkins для тестов ATAP.
 #   ci/jenkins.sh up      собрать образ и запустить Jenkins (http://localhost:8085)
 #   ci/jenkins.sh down    остановить Jenkins (данные и история отчётов сохраняются)
-#   ci/jenkins.sh build   запустить сборку задания atap-tests и дождаться результата
+#   ci/jenkins.sh build [none|integration|e2e]  запустить сборку atap-tests (необязательно — имитировать падение этапа)
 #   ci/jenkins.sh reset   удалить Jenkins вместе с данными и историей отчётов
 set -euo pipefail
 
@@ -32,11 +32,16 @@ case "${1:-}" in
     crumb="$(curl -fs -c "$jar" "$URL/crumbIssuer/api/json")"
     field="$(printf '%s' "$crumb" | sed -n 's/.*"crumbRequestField":"\([^"]*\)".*/\1/p')"
     value="$(printf '%s' "$crumb" | sed -n 's/.*"crumb":"\([^"]*\)".*/\1/p')"
-    curl -fs -b "$jar" -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
-    echo "Сборка запущена: $URL/job/atap-tests/" >&2
+    number="$(curl -fs "$URL/job/atap-tests/api/json?tree=nextBuildNumber" | sed -n 's/.*"nextBuildNumber":\([0-9]*\).*/\1/p')"
+    if [ -n "${2:-}" ]; then
+      curl -fs -b "$jar" -X POST -H "$field: $value" "$URL/job/atap-tests/buildWithParameters?SIMULATE_FAILURE=$2" -o /dev/null
+    else
+      curl -fs -b "$jar" -X POST -H "$field: $value" "$URL/job/atap-tests/build" -o /dev/null
+    fi
+    echo "Сборка №$number запущена: $URL/job/atap-tests/$number/" >&2
     for _ in $(seq 1 600); do
       sleep 5
-      info="$(curl -fs "$URL/job/atap-tests/lastBuild/api/json?tree=building,result,number" || true)"
+      info="$(curl -fs "$URL/job/atap-tests/$number/api/json?tree=building,result" || true)"
       case "$info" in
         *'"building":false'*) echo "$info" >&2; case "$info" in *'"result":"SUCCESS"'*) exit 0 ;; *) exit 1 ;; esac ;;
       esac

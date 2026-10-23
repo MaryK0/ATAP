@@ -30,6 +30,7 @@ run_tests_container() {
     --mount "type=bind,source=${HOST_REPO},target=/repo,readonly" \
     -e REPO_URL=file:///repo \
     -e COMMIT="${GIT_COMMIT:-HEAD}" \
+    -e SIMULATE_FAILURE="${SIMULATE_FAILURE:-none}" \
     -e ATAP_TEST_PG="$STAND_PG" \
     -e ATAP_TEST_REDIS="$STAND_REDIS" \
     -e ATAP_TEST_API="$STAND_API" \
