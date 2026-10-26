@@ -7,6 +7,10 @@ export DOTNET_CLI_UI_LANGUAGE=en VSLANG=1033
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 DOC="docs/use-case-coverage.md"
+if [ ! -f "$DOC" ]; then
+  echo "Файл $DOC (локальная таблица покрытия, в репозитории его нет) не найден — проверять нечего."
+  exit 0
+fi
 LIST="$(mktemp)"; trap 'rm -f "$LIST"' EXIT
 
 for project in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.BlazorUI.Tests ATAP.IntegrationTests ATAP.E2ETests; do

@@ -136,8 +136,8 @@ ATAP/
 | Покрытие строк и ветвлений (unit) | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
 | Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 75,1% |
 | Диаграмма вариантов использования с тестами | локальный файл `docs/use-case-demo.html` (в репозитории его нет, он в `.gitignore`): клик по варианту на диаграмме показывает тесты и команду | ✅ 15 областей |
-| Показ тестов по вариантам использования | `bash scripts/demo-usecase.sh list \| <номер> \| all` (шпаргалка — `docs/demo-usecases.md`) | ✅ 15 вариантов |
-| Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — `docs/use-case-coverage.md`) | ✅ все названные тесты найдены |
+| Показ тестов по вариантам использования | `bash scripts/demo-usecase.sh list \| <номер> \| all` (шпаргалка — локальный файл `docs/demo-usecases.md`, в репозитории его нет) | ✅ 15 вариантов |
+| Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — локальный файл `docs/use-case-coverage.md`, в репозитории её нет) | ✅ все названные тесты найдены |
 | Allure-отчёт | `make test-allure` → `allure-report/` (нужен `npm i -g allure-commandline`) | ✅ |
 | Веб-приложение | `make run-blazor` → http://localhost:5075 (нужны БД и Redis) | ✅ |
 | ConsoleUI | `make run` (нужна БД) | ✅ |

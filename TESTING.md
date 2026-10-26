@@ -374,7 +374,7 @@ make test-coverage
 Не покрыты: четыре `Mongo*Repository` (MongoDB тестами не охвачен сознательно — запасное хранилище) и `SqlQueries` (статический класс запросов,
 который приложением не используется). `ATAP.Api`, `ATAP.BlazorUI` и `ATAP.ConsoleUI` в расчёт покрытия не входят.
 
-HTML-отчёт: `TestResults/CoverageReport/index.html` (генерируется, не коммитится). Покрытие вариантов использования — [`docs/use-case-coverage.md`](docs/use-case-coverage.md).
+HTML-отчёт: `TestResults/CoverageReport/index.html` (генерируется, не коммитится). Покрытие вариантов использования — локальная таблица `docs/use-case-coverage.md` (в репозиторий не входит).
 
 ### Требование 15 — регрессия, рефакторинг, поддержка
 

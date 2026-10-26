@@ -25,3 +25,5 @@ logs/
 
 # Локальная страница для показа вариантов использования (в репозиторий не кладём)
 docs/use-case-demo.html
+docs/use-case-coverage.md
+docs/demo-usecases.md
