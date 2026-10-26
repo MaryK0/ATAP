@@ -135,7 +135,7 @@ ATAP/
 | Имитация запросов E2E и захват трафика | `bash scripts/capture-traffic.sh` → `docs/traffic/` | ✅ 15 запросов |
 | Покрытие строк и ветвлений (unit) | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
 | Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 75,1% |
-| Диаграмма вариантов использования с тестами | открыть `docs/use-case-demo.html` в браузере: клик по варианту на диаграмме показывает тесты и команду | ✅ 15 областей |
+| Диаграмма вариантов использования с тестами | локальный файл `docs/use-case-demo.html` (в репозитории его нет, он в `.gitignore`): клик по варианту на диаграмме показывает тесты и команду | ✅ 15 областей |
 | Показ тестов по вариантам использования | `bash scripts/demo-usecase.sh list \| <номер> \| all` (шпаргалка — `docs/demo-usecases.md`) | ✅ 15 вариантов |
 | Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — `docs/use-case-coverage.md`) | ✅ все названные тесты найдены |
 | Allure-отчёт | `make test-allure` → `allure-report/` (нужен `npm i -g allure-commandline`) | ✅ |

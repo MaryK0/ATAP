@@ -20,7 +20,10 @@ PAGE="docs/use-case-demo.html"
 mapfile -t refs < <(
   {
     grep -oE '`[A-Za-z0-9_]+(Tests|IntegrationTest|E2ETest)(\.[A-Za-z0-9_]+)?`' "$DOC" | tr -d '`'
-    grep -oE '[A-Za-z0-9_]+(Tests|IntegrationTest|E2ETest)(\.[A-Za-z0-9_]+)?' "$PAGE"
+    # локальная страница показа (не хранится в репозитории) проверяется, только если она есть
+    if [ -f "$PAGE" ]; then
+      grep -oE '[A-Za-z0-9_]+(Tests|IntegrationTest|E2ETest)(\.[A-Za-z0-9_]+)?' "$PAGE"
+    fi
   } | grep -vE '\.cs$' | sort -u   # имена файлов вида AuthServiceTests.cs — не названия тестов
 )
 
@@ -32,5 +35,5 @@ for ref in "${refs[@]}"; do
   fi
 done
 
-echo "Ссылок на тесты в $DOC и $PAGE: ${#refs[@]}, не найдено: $missing"
+echo "Ссылок на тесты в $DOC$([ -f "$PAGE" ] && echo " и $PAGE"): ${#refs[@]}, не найдено: $missing"
 [ "$missing" -eq 0 ]
