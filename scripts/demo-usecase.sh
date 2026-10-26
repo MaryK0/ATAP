@@ -14,6 +14,7 @@
 #         eval "$(bash scripts/test-stand.sh up)"
 #     запускайте варианты, в конце:  bash scripts/test-stand.sh down
 set -uo pipefail
+export DOTNET_CLI_UI_LANGUAGE=en VSLANG=1033   # скрипт разбирает английский вывод dotnet test
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 BL=ATAP.BusinessLogic.Tests
@@ -33,9 +34,9 @@ define() {
        UNIT="LoginAsync|GetCurrentUserAsync"; INTEG="AuthService_Login|AuthService_RegisterThenLogin|UserRepository_GetByUsername"; E2E_RUN=1
        FILES="ATAP.BusinessLogic.Tests/AuthServiceTests.cs, ATAP.E2ETests/DemoScenario_*.cs (шаги 3–4)" ;;
     3) TITLE="Задать фильтры на карте (аналитик, админ, FR-04..FR-06)"
-       UNIT="MapService"; INTEG="Map"; E2E_RUN=1
-       FILES="ATAP.BusinessLogic.Tests/MapServiceTests.cs, ATAP.E2ETests/DemoScenario_*.cs (шаг 1: карта, счётчик, bbox)"
-       NOTE="Фильтры карты (FR-06: область, высота, страна) в приложении НЕ реализованы; проверены сама карта и область bbox на уровне API." ;;
+       UNIT="MapService|FlightFilter"; INTEG="Map"; E2E_RUN=1
+       FILES="ATAP.BusinessLogic.Tests/FlightFilterTests.cs, MapServiceTests.cs, ATAP.IntegrationTests/BusinessLogic/MapService_GetCurrentFlights_*, ATAP.E2ETests/DemoScenario_*.cs (шаг 1)"
+       NOTE="Фильтры (область, высота, страна) есть в бизнес-логике и API и покрыты тестами; в интерфейсе Blazor их нет (веб-интерфейс работает без API)." ;;
     4) TITLE="Задать фильтры в витрине: период и аэропорт (аналитик, админ, FR-07..FR-09)"
        UNIT="AnalyticsServiceTests.GetCongestion|AnalyticsServiceTests.GetAllCongestion"; DA_F="GetCongestionQuery"
        INTEG="AnalyticsRepository|AnalyticsService_GetCongestion"; E2E_RUN=1

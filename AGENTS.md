@@ -88,7 +88,7 @@ ATAP/
 ├─ ATAP.ConsoleUI/              # технологический UI: меню по ролям, Serilog
 ├─ ATAP.BusinessLogic.Tests/    # unit-тесты бизнес-логики (моки, Builders, Mothers, случайный порядок)
 ├─ ATAP.DataAccess.Tests/       # unit-тесты SqlQueryFactory без БД
-├─ ATAP.IntegrationTests/       # 36 интеграционных тестов на стенде (PostgreSQL + Redis), один файл — один тест
+├─ ATAP.IntegrationTests/       # 40 интеграционных тестов на стенде (PostgreSQL + Redis), один файл — один тест
 ├─ ATAP.E2ETests/               # E2E-тест демонстрационного сценария по HTTP
 ├─ ATAP.Api/                    # REST API (ASP.NET Core 8) по web_lr2/openapi.yaml: срез WebLab#3, Swagger UI
 ├─ ci/                          # контейнер запуска тестов (Dockerfile.tests, run-tests.sh), Jenkins (jenkins/), скрипты этапов
@@ -122,10 +122,10 @@ ATAP/
 | Собрать решение | `make build` или `dotnet build ATAP.sln -c Debug` | ✅ 0 ошибок |
 | Поднять БД и кэш | `make db-up` или `docker compose -f db/docker-compose.yml up -d` | ✅ PostgreSQL :5433, Redis :6379 |
 | Поднять БД и залить демо-рейсы | `make demo-setup` | ✅ 100 рейсов на карте |
-| Unit-тесты бизнес-логики | `make test-unit` | ✅ 51/51, без БД и сети |
+| Unit-тесты бизнес-логики | `make test-unit` | ✅ 74/74, без БД и сети |
 | Unit-тесты SqlQueryFactory | `make test-dataaccess` | ✅ 12/12, без БД и сети |
-| Все unit-тесты | `make test-offline` | ✅ 63/63 |
-| Интеграционные тесты | `make test-integration` (отдельный стенд в Docker, удаляется после прогона) | ✅ 36/36 |
+| Все unit-тесты | `make test-offline` | ✅ 86/86 |
+| Интеграционные тесты | `make test-integration` (отдельный стенд в Docker, удаляется после прогона) | ✅ 40/40 |
 | E2E-тест демонстрационного сценария | `make test-e2e` (стенд: PostgreSQL, Redis, ATAP.Api) | ✅ 1/1 |
 | unit → integration → e2e на одном стенде | `make test` (= `make test-stand-all`) | ✅ |
 | REST API локально | `make run-api` → http://localhost:5080, Swagger UI `/swagger` (нужны БД и Redis) | ✅ |

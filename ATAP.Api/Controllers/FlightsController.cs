@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ATAP.Api.Controllers;
 
-/// <summary>Текущие позиции рейсов для карты (FR-04): снимок без пагинации, доступен без входа.</summary>
+/// <summary>Текущие позиции рейсов для карты (FR-04, FR-06): снимок без пагинации, доступен без входа.</summary>
 [Route("api/v1/flights")]
 [AllowAnonymous]
 public sealed class FlightsController : ApiControllerBase
@@ -20,26 +20,42 @@ public sealed class FlightsController : ApiControllerBase
 
     public FlightsController(IMapService map) => _map = map;
 
-    /// <summary>listCurrentFlights: снимок позиций; необязательный bbox сужает его до видимой области карты.</summary>
+    /// <summary>
+    /// listCurrentFlights: снимок позиций. Фильтры карты (FR-06) необязательны и применяются вместе:
+    /// <c>bbox</c> — видимая область, <c>minAltitude</c>/<c>maxAltitude</c> — высота, <c>originCountry</c> — страна судна.
+    /// </summary>
     [HttpGet("current")]
-    public async Task<IActionResult> ListCurrentFlights([FromQuery] string? bbox)
+    public async Task<IActionResult> ListCurrentFlights(
+        [FromQuery] string? bbox, [FromQuery] int? minAltitude, [FromQuery] int? maxAltitude,
+        [FromQuery] string? originCountry)
     {
-        (double MinLon, double MinLat, double MaxLon, double MaxLat)? area = null;
+        var errors = new List<FieldError>();
+
+        BoundingBox? area = null;
         if (bbox is not null)
         {
-            var parsed = ParseBbox(bbox);
-            if (parsed is null)
-                return BadData(new FieldError("bbox",
+            area = ParseBbox(bbox);
+            if (area is null)
+                errors.Add(new("bbox",
                     "Ожидаются четыре числа: minLon,minLat,maxLon,maxLat (долгота от -180 до 180, широта от -90 до 90, minLat не больше maxLat)"));
-            area = parsed;
         }
+        if (minAltitude is < 0) errors.Add(new("minAltitude", "Высота не может быть отрицательной"));
+        if (maxAltitude is < 0) errors.Add(new("maxAltitude", "Высота не может быть отрицательной"));
+        if (minAltitude > maxAltitude) errors.Add(new("minAltitude", "Минимальная высота не может быть больше максимальной"));
+        if (originCountry is { Length: > 100 }) errors.Add(new("originCountry", "Не более 100 символов"));
+        if (errors.Count > 0) return BadData(errors.ToArray());
 
-        IEnumerable<FlightDto> flights = await _map.GetCurrentFlightsAsync();
-        if (area is { } a)
-            flights = flights.Where(f => f.Latitude >= a.MinLat && f.Latitude <= a.MaxLat && InLongitude(f.Longitude, a));
+        var filter = new FlightFilter
+        {
+            Area = area,
+            MinAltitude = minAltitude,
+            MaxAltitude = maxAltitude,
+            Country = originCountry
+        };
 
+        var flights = await _map.GetCurrentFlightsAsync(filter);
         var body = flights.OrderBy(f => f.Id)
-            .Select(f => new CurrentFlightResponse(f.Id, f.Callsign, f.Latitude, f.Longitude, f.Altitude))
+            .Select(f => new CurrentFlightResponse(f.Id, f.Callsign, f.Latitude, f.Longitude, f.Altitude, f.Country))
             .ToList();
 
         // Условный запрос: клиент опрашивает снимок раз в 5 минут и не перекачивает неизменившийся
@@ -53,12 +69,7 @@ public sealed class FlightsController : ApiControllerBase
         return Ok(body);
     }
 
-    private static bool InLongitude(double longitude, (double MinLon, double MinLat, double MaxLon, double MaxLat) a) =>
-        a.MinLon <= a.MaxLon
-            ? longitude >= a.MinLon && longitude <= a.MaxLon
-            : longitude >= a.MinLon || longitude <= a.MaxLon; // область пересекает меридиан 180°
-
-    private static (double, double, double, double)? ParseBbox(string value)
+    private static BoundingBox? ParseBbox(string value)
     {
         var parts = value.Split(',', StringSplitOptions.TrimEntries);
         if (parts.Length != 4) return null;
@@ -72,6 +83,6 @@ public sealed class FlightsController : ApiControllerBase
         if (minLon is < -180 or > 180 || maxLon is < -180 or > 180) return null;
         if (minLat is < -90 or > 90 || maxLat is < -90 or > 90) return null;
         if (minLat > maxLat) return null;
-        return (minLon, minLat, maxLon, maxLat);
+        return new BoundingBox(minLon, minLat, maxLon, maxLat);
     }
 }

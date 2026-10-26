@@ -3,6 +3,7 @@
 # (таблица не должна расходиться с кодом). Нужна собранная решётка: dotnet build ATAP.sln.
 #   bash scripts/check-usecase-coverage.sh
 set -euo pipefail
+export DOTNET_CLI_UI_LANGUAGE=en VSLANG=1033
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 DOC="docs/use-case-coverage.md"

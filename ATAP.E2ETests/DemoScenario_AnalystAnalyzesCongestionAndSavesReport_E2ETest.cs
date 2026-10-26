@@ -52,6 +52,22 @@ public class DemoScenario_AnalystAnalyzesCongestionAndSavesReport_E2ETest
             using var badBbox = await http.GetAsync("/api/v1/flights/current?bbox=1,2,3");
             await AssertProblem(badBbox, HttpStatusCode.BadRequest, "validation-error");
 
+            // Фильтры карты (FR-06): страна, диапазон высот, их сочетание с областью; неверный диапазон — ошибка
+            var german = await GetJson(http, "/api/v1/flights/current?originCountry=germany");
+            Assert.Equal(1, german.GetArrayLength());
+            Assert.Equal("DLH002", german[0].GetProperty("callsign").GetString());
+            Assert.Equal("Germany", german[0].GetProperty("originCountry").GetString());
+
+            var lowFlights = await GetJson(http, "/api/v1/flights/current?minAltitude=2000&maxAltitude=3500");
+            Assert.Equal(2, lowFlights.GetArrayLength());                       // BAW001 (3200 м) и DLH002 (2800 м), не AFL123 (10000 м)
+
+            var combined = await GetJson(http, "/api/v1/flights/current?bbox=-1,49,9,52&maxAltitude=3000&originCountry=Germany");
+            Assert.Equal(1, combined.GetArrayLength());
+            Assert.Equal("DLH002", combined[0].GetProperty("callsign").GetString());
+
+            using var invertedAltitude = await http.GetAsync("/api/v1/flights/current?minAltitude=5000&maxAltitude=1000");
+            await AssertProblem(invertedAltitude, HttpStatusCode.BadRequest, "validation-error");
+
             // ── Шаг 2. Гость не получает аналитику ────────────────────────────────────────────────
             using var guestCongestion = await http.GetAsync($"/api/v1/congestion?{Period}");
             await AssertProblem(guestCongestion, HttpStatusCode.Unauthorized, "unauthorized");

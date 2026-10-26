@@ -29,7 +29,7 @@ public class SqlQueryFactory : ISqlQueryFactory
     
     
     public string GetCurrentFlightsQuery() => @"
-        SELECT flight_id, callsign, latitude, longitude, altitude
+        SELECT flight_id, callsign, latitude, longitude, altitude, origin_country
         FROM mart.current_flights_map";
     
     public string GetAirportsQuery() => @"

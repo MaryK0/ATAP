@@ -39,7 +39,8 @@ public class PostgresMapRepository : IMapRepository
                 Callsign = reader.GetString(1),
                 Latitude = reader.GetDouble(2),
                 Longitude = reader.GetDouble(3),
-                Altitude = reader.IsDBNull(4) ? 0 : reader.GetInt32(4)
+                Altitude = reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
+                Country = reader.IsDBNull(5) ? null : reader.GetString(5)
             });
         }
         

@@ -32,6 +32,90 @@ public class MapServiceTests
     }
 
     [Fact]
+    [AllureFeature("Flight filters")]
+    public async Task GetCurrentFlightsAsync_WithCountryFilter_ShouldReturnOnlyThatCountry()
+    {
+        // Arrange (фильтр по стране: регистр не важен)
+        var service = new MapService(new MockMapRepository());
+
+        // Act
+        var russian = await service.GetCurrentFlightsAsync(new FlightFilter { Country = "russia" });
+        var german = await service.GetCurrentFlightsAsync(new FlightFilter { Country = "Germany" });
+
+        // Assert
+        Assert.Equal(2, russian.Count);
+        Assert.Empty(german);
+    }
+
+    [Fact]
+    [AllureFeature("Flight filters")]
+    public async Task GetCurrentFlightsAsync_WithAltitudeFilter_ShouldReturnFlightsInRange()
+    {
+        // Arrange (рейсы на высоте 10000 и 11000 м)
+        var service = new MapService(new MockMapRepository());
+
+        // Act
+        var result = await service.GetCurrentFlightsAsync(new FlightFilter { MinAltitude = 10500, MaxAltitude = 11500 });
+
+        // Assert
+        var flight = Assert.Single(result);
+        Assert.Equal("SBI456", flight.Callsign);
+    }
+
+    [Fact]
+    [AllureFeature("Flight filters")]
+    public async Task GetCurrentFlightsAsync_WithAreaFilter_ShouldReturnFlightsInsideVisibleArea()
+    {
+        // Arrange (область вокруг точки 55.76, 37.63 — только второй рейс)
+        var service = new MapService(new MockMapRepository());
+        var filter = new FlightFilter { Area = new BoundingBox(37.625, 55.755, 37.635, 55.765) };
+
+        // Act
+        var result = await service.GetCurrentFlightsAsync(filter);
+
+        // Assert
+        var flight = Assert.Single(result);
+        Assert.Equal("SBI456", flight.Callsign);
+    }
+
+    [Fact]
+    [AllureFeature("Flight filters")]
+    public async Task GetCurrentFlightsAsync_WithEmptyFilter_ShouldReturnAllFlights()
+    {
+        // Arrange (пустой фильтр равносилен запросу без фильтра)
+        var service = new MapService(new MockMapRepository());
+
+        // Act
+        var result = await service.GetCurrentFlightsAsync(new FlightFilter());
+
+        // Assert
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    [AllureFeature("Flight filters")]
+    public async Task GetCurrentFlightsAsync_WithInvertedAltitudeRange_ShouldThrowArgumentException()
+    {
+        // Arrange (минимальная высота больше максимальной — ошибка ввода)
+        var service = new MapService(new MockMapRepository());
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => service.GetCurrentFlightsAsync(new FlightFilter { MinAltitude = 5000, MaxAltitude = 1000 }));
+    }
+
+    [Fact]
+    [AllureFeature("Flight filters")]
+    public async Task GetCurrentFlightsAsync_WithNullFilter_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var service = new MapService(new MockMapRepository());
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => service.GetCurrentFlightsAsync((FlightFilter)null!));
+    }
+
+    [Fact]
     [AllureFeature("Flights")]
     public async Task GetCurrentFlightsAsync_WhenRepositoryEmpty_ShouldReturnEmptyList()
     {

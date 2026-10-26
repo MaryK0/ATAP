@@ -25,8 +25,19 @@ public class MapService : IMapService
             Callsign = f.Callsign,
             Latitude = f.Latitude,
             Longitude = f.Longitude,
-            Altitude = f.Altitude
+            Altitude = f.Altitude,
+            Country = f.Country
         }).ToList();
+    }
+
+    public async Task<List<FlightDto>> GetCurrentFlightsAsync(FlightFilter filter)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        if (filter.MinAltitude > filter.MaxAltitude)
+            throw new ArgumentException("Минимальная высота не может быть больше максимальной", nameof(filter));
+
+        var flights = await GetCurrentFlightsAsync();
+        return filter.Apply(flights).ToList();
     }
 
     public async Task<List<AirportDto>> GetAirportsAsync()

@@ -13,8 +13,8 @@ public class MockMapRepository : IMapRepository
         {
             _flights = new()
             {
-                new() { FlightId = 1, Callsign = "AFL123", Latitude = 55.75, Longitude = 37.62, Altitude = 10000 },
-                new() { FlightId = 2, Callsign = "SBI456", Latitude = 55.76, Longitude = 37.63, Altitude = 11000 }
+                new() { FlightId = 1, Callsign = "AFL123", Latitude = 55.75, Longitude = 37.62, Altitude = 10000, Country = "Russia" },
+                new() { FlightId = 2, Callsign = "SBI456", Latitude = 55.76, Longitude = 37.63, Altitude = 11000, Country = "Russia" }
             };
             _airports = new()
             {

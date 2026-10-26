@@ -1,0 +1,1909 @@
+openapi: 3.1.0
+
+info:
+  title: ATAP API
+  version: 1.1.0
+  summary: Публичный REST API платформы аналитики воздушного движения ATAP
+  description: |
+    Внешний REST API системы ATAP (Air Traffic Analytics Platform). Даёт доступ ко всем данным
+    системы — воздушным судам, рейсам и их трекам, аэропортам, витрине загруженности, сохранённым
+    отчётам и пользователям — для внешних интеграций и клиентского SPA.
+
+    Контракт построен по материалам WebLab#1 (`README.md`): требования FR-01…FR-16,
+    пользовательские сценарии 1–4, ER-диаграмма (§7), DDL `db/create_tables.sql`, экраны и связи
+    сценариев (§11, §13).
+
+    **Версионирование.** Мажорная версия — в пути: `/api/v1/…`.
+
+    **Аутентификация.** Сессия — ресурс `/api/v1/sessions`: `POST` создаёт сессию (вход) и
+    возвращает JWT, `DELETE /api/v1/sessions/current` завершает её (выход). Токен передаётся в
+    заголовке `Authorization: Bearer <token>`.
+
+    **Роли.** `guest` — запрос без токена; `analyst` и `admin` — из токена. Администратор имеет все
+    права аналитика. Допустимые роли каждой операции — в расширении `x-roles`.
+
+    **Форматы.** Ресурсы отдаются в `application/json`. Данные витрины дополнительно доступны в
+    `text/csv` — формат выбирается заголовком `Accept` (согласование содержимого). Частичное
+    обновление — `PATCH` в формате JSON Merge Patch (`application/merge-patch+json`, RFC 7396).
+    Ошибки — Problem Details (`application/problem+json`, RFC 9457).
+
+    **Пагинация.** Коллекции — параметрами `limit` и `offset`; ответ — объект
+    `{items, total, limit, offset}`.
+
+    **Даты.** Период задаётся датами `dateFrom` и `dateTo` (`YYYY-MM-DD`), обе границы включаются. Период
+    не больше 31 дня; `dateFrom` не позже `dateTo`. Те же имена полей — у сохранённого отчёта.
+  contact:
+    name: ATAP
+  license:
+    name: Учебный проект
+    identifier: CC-BY-4.0
+
+servers:
+  - url: http://localhost:5080
+    description: Локальная разработка (проект ATAP.Api, `make run-api`)
+
+tags:
+  - name: sessions
+    description: Вход и выход (FR-02, FR-03)
+  - name: users
+    description: Пользователи — регистрация и администрирование (FR-01, FR-13…FR-16)
+  - name: aircraft
+    description: Воздушные суда
+  - name: flights
+    description: Рейсы, текущие позиции для карты и треки (FR-04)
+  - name: airports
+    description: Аэропорты (FR-05)
+  - name: congestion
+    description: Витрина загруженности аэропортов (FR-07…FR-10)
+  - name: reports
+    description: Сохранённые отчёты пользователя (FR-11, FR-12)
+
+paths:
+
+  # ─────────────────────────────── sessions ───────────────────────────────
+
+  /api/v1/sessions:
+    post:
+      tags: [sessions]
+      operationId: createSession
+      summary: Войти (создать сессию)
+      description: |
+        Проверяет логин и пароль, создаёт сессию и возвращает токен доступа. При неизвестном логине
+        и при неверном пароле ответ одинаковый — чтобы не раскрывать, что именно неверно.
+        FR-02, сценарий 2.
+      x-roles: [guest]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreate'
+            example:
+              username: admin1
+              password: admin123
+      responses:
+        '201':
+          description: Сессия создана
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+              example:
+                accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Iiwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJl
+                tokenType: Bearer
+                expiresIn: 3600
+                user:
+                  id: 8
+                  username: admin1
+                  email: admin1@atap.com
+                  role: admin
+                  createdAt: '2026-06-10T08:00:00Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Неверный логин или пароль
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+              example: Bearer
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: https://atap.example/problems/invalid-credentials
+                title: Неверный логин или пароль
+                status: 401
+                instance: /api/v1/sessions
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+  /api/v1/sessions/current:
+    get:
+      tags: [sessions]
+      operationId: getCurrentSession
+      summary: Текущая сессия
+      description: Пользователь, которому принадлежит токен. Нужен SPA, чтобы восстановить состояние после перезагрузки страницы.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Текущий пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 8
+                username: admin1
+                email: admin1@atap.com
+                role: admin
+                createdAt: '2026-06-10T08:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [sessions]
+      operationId: deleteCurrentSession
+      summary: Выйти (завершить сессию)
+      description: Завершает сессию; токен больше не принимается. Повторный вызов с тем же токеном вернёт `401`. FR-03, сценарий 2.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Сессия завершена
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ──────────────────────────────── users ─────────────────────────────────
+
+  /api/v1/users:
+    get:
+      tags: [users]
+      operationId: listUsers
+      summary: Список пользователей
+      description: Все пользователи с ролью и датой регистрации. FR-13.
+      x-roles: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          required: false
+          description: Фильтр по роли
+          schema:
+            $ref: '#/components/schemas/Role'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+              example:
+                items:
+                  - id: 8
+                    username: admin1
+                    email: admin1@atap.com
+                    role: admin
+                    createdAt: '2026-06-10T08:00:00Z'
+                  - id: 13
+                    username: e.morozova
+                    email: e.morozova@atap.com
+                    role: analyst
+                    createdAt: '2026-06-10T09:15:00Z'
+                total: 2
+                limit: 50
+                offset: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [users]
+      operationId: createUser
+      summary: Создать пользователя (регистрация или добавление администратором)
+      description: |
+        - **Гость** — самостоятельная регистрация (FR-01, сценарий 1). Поле `role` передавать
+          нельзя (`403`), пользователь получает роль `analyst`.
+        - **Администратор** — добавление пользователя с любой ролью (FR-14); без `role` — `analyst`.
+
+        Логин и email уникальны; пароль хранится только в виде хэша (NFR-S1, ADR-0004).
+      x-roles: [guest, admin]
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            examples:
+              registration:
+                summary: Регистрация гостем
+                value:
+                  username: e.morozova
+                  email: e.morozova@atap.com
+                  password: S3cure!pass
+              byAdmin:
+                summary: Добавление администратором
+                value:
+                  username: s.novikov
+                  email: s.novikov@atap.com
+                  password: Temp#2026
+                  role: analyst
+      responses:
+        '201':
+          description: |
+            Пользователь создан. Данные пользователя — в теле ответа.
+          headers:
+            Location:
+              description: |
+                URI созданного пользователя. Возвращается только администратору — читать
+                записи пользователей (`getUser`) может только он. При самостоятельной
+                регистрации гостем заголовка нет: гостю эта запись недоступна.
+              schema:
+                type: string
+                format: uri-reference
+              example: /api/v1/users/14
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 13
+                username: e.morozova
+                email: e.morozova@atap.com
+                role: analyst
+                createdAt: '2026-06-10T09:15:00Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/UserConflict'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+  /api/v1/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [users]
+      operationId: getUser
+      summary: Получить пользователя
+      description: 'Данные одного пользователя по идентификатору: логин, email, роль, дата регистрации. Пароль и его хэш не возвращаются. Только администратор. FR-13.'
+      x-roles: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 14
+                username: s.novikov
+                email: s.novikov@atap.com
+                role: analyst
+                createdAt: '2026-10-18T10:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+    put:
+      tags: [users]
+      operationId: replaceUser
+      summary: Заменить данные пользователя
+      description: |
+        Полная замена изменяемых полей: `username`, `email`, `role` обязательны. Пароль не входит в
+        представление ресурса и через `PUT` не меняется — для него `PATCH`. FR-15.
+      x-roles: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserReplace'
+            example:
+              username: s.novikov
+              email: s.novikov@atap.com
+              role: admin
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 14
+                username: s.novikov
+                email: s.novikov@atap.com
+                role: admin
+                createdAt: '2026-10-18T10:00:00Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '409':
+          $ref: '#/components/responses/UserConflict'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    patch:
+      tags: [users]
+      operationId: updateUser
+      summary: Частично изменить пользователя
+      description: |
+        Меняет только переданные поля (JSON Merge Patch, RFC 7396) — например, только роль или
+        только пароль. Пустой объект не допускается. FR-15.
+      x-roles: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UserPatch'
+            examples:
+              changeRole:
+                summary: Сменить только роль
+                value:
+                  role: admin
+              resetPassword:
+                summary: Сменить только пароль
+                value:
+                  password: N3w#pass2026
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 14
+                username: s.novikov
+                email: s.novikov@atap.com
+                role: admin
+                createdAt: '2026-10-18T10:00:00Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '409':
+          $ref: '#/components/responses/UserConflict'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    delete:
+      tags: [users]
+      operationId: deleteUser
+      summary: Удалить пользователя
+      description: |
+        Удаляет пользователя вместе с его сохранёнными отчётами. Пользователя с ролью `admin`
+        удалить нельзя никому, в том числе самому себе: удалять пользователей может только
+        администратор, поэтому запрет на удаление себя — частный случай этого правила. FR-16.
+      x-roles: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Пользователь удалён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостаточно прав, либо пользователь с ролью `admin` удалению не подлежит
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                notAdmin:
+                  summary: Вызывает не администратор
+                  value:
+                    type: https://atap.example/problems/forbidden
+                    title: Недостаточно прав
+                    status: 403
+                adminProtected:
+                  summary: Удаляемый пользователь — администратор (в том числе сам вызывающий)
+                  value:
+                    type: https://atap.example/problems/cannot-delete-admin
+                    title: Нельзя удалить пользователя с ролью admin
+                    status: 403
+                    instance: /api/v1/users/8
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+
+  # ─────────────────────────────── aircraft ───────────────────────────────
+
+  /api/v1/aircraft:
+    get:
+      tags: [aircraft]
+      operationId: listAircraft
+      summary: Список воздушных судов
+      description: 'Справочник воздушных судов с поиском по адресу ICAO 24-bit и стране регистрации. Только вошедшие пользователи.'
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: icao24
+          in: query
+          required: false
+          description: Поиск по адресу ICAO 24-bit
+          schema:
+            $ref: '#/components/schemas/Icao24'
+        - name: originCountry
+          in: query
+          required: false
+          description: Страна регистрации
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница воздушных судов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AircraftPage'
+              example:
+                items:
+                  - id: 312
+                    icao24: 3C6752
+                    registration: D-AIBA
+                    model: A319-112
+                    manufacturer: Airbus
+                    originCountry: Germany
+                total: 1
+                limit: 50
+                offset: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/aircraft/{aircraftId}:
+    get:
+      tags: [aircraft]
+      operationId: getAircraft
+      summary: Получить воздушное судно
+      description: 'Одно воздушное судно по идентификатору: адрес ICAO 24-bit, бортовой номер, модель, производитель, страна. Только вошедшие пользователи.'
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AircraftId'
+      responses:
+        '200':
+          description: Воздушное судно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aircraft'
+              example:
+                id: 312
+                icao24: 3C6752
+                registration: D-AIBA
+                model: A319-112
+                manufacturer: Airbus
+                originCountry: Germany
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ──────────────────────────────── flights ───────────────────────────────
+
+  /api/v1/flights:
+    get:
+      tags: [flights]
+      operationId: listFlights
+      summary: Список рейсов
+      description: Рейсы с фильтрами по позывному, судну и времени наблюдения.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: callsign
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 10
+        - name: aircraftId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: seenFrom
+          in: query
+          required: false
+          description: Рейс наблюдался не раньше этого момента
+          schema:
+            type: string
+            format: date-time
+        - name: seenTo
+          in: query
+          required: false
+          description: Рейс наблюдался не позже этого момента
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница рейсов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightPage'
+              example:
+                items:
+                  - id: 6254
+                    callsign: DLH8PJ
+                    aircraftId: 312
+                    firstSeen: '2026-06-10T06:12:00Z'
+                    lastSeen: '2026-06-10T07:08:00Z'
+                total: 1
+                limit: 50
+                offset: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/flights/current:
+    get:
+      tags: [flights]
+      operationId: listCurrentFlights
+      summary: Текущие позиции рейсов (снимок для карты)
+      description: |
+        Последняя позиция каждого рейса за 15 минут (`mart.current_flights_map`). Снимок
+        обновляется раз в 5 минут; клиент опрашивает ресурс с тем же интервалом и может
+        использовать условный запрос (`If-None-Match`). Без пагинации: карте нужен весь снимок
+        сразу, а при росте числа судов ответ можно сузить параметром `bbox` — видимой областью
+        карты. FR-04, FR-06 (в части видимой области), сценарий 4.
+      x-roles: [guest, analyst, admin]
+      security: []
+      parameters:
+        - name: bbox
+          in: query
+          required: false
+          description: |
+            Видимая область карты: `minLon,minLat,maxLon,maxLat` (градусы, WGS 84). Возвращаются
+            только суда внутри области; без параметра — весь снимок. Если `minLon` больше
+            `maxLon`, область пересекает меридиан 180° (как в RFC 7946 §5.2). `minLat` не больше
+            `maxLat`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 4
+            maxItems: 4
+            prefixItems:
+              - $ref: '#/components/schemas/Longitude'
+              - $ref: '#/components/schemas/Latitude'
+              - $ref: '#/components/schemas/Longitude'
+              - $ref: '#/components/schemas/Latitude'
+          example: [159.5, -11.5, 160.0, -11.0]
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag ранее полученного снимка
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Снимок текущих позиций
+          headers:
+            ETag:
+              description: Версия снимка
+              schema:
+                type: string
+            Cache-Control:
+              description: Срок свежести снимка
+              schema:
+                type: string
+              example: max-age=300
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CurrentFlight'
+              example:
+                - flightId: 6254
+                  icao24: 3C6752
+                  callsign: DLH8PJ
+                  originCountry: Germany
+                  aircraftModel: A319-112
+                  latitude: 50.0379
+                  longitude: 8.5622
+                  altitude: 3200
+                  velocity: 210.5
+                  heading: 245
+                  onGround: false
+        '304':
+          description: Снимок не изменился
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/v1/flights/{flightId}:
+    get:
+      tags: [flights]
+      operationId: getFlight
+      summary: Получить рейс
+      description: 'Один рейс по идентификатору: позывной, воздушное судно, время первого и последнего наблюдения. Только вошедшие пользователи.'
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: Рейс
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+              example:
+                id: 6254
+                callsign: DLH8PJ
+                aircraftId: 312
+                firstSeen: '2026-06-10T06:12:00Z'
+                lastSeen: '2026-06-10T07:08:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/flights/{flightId}/positions:
+    get:
+      tags: [flights]
+      operationId: listFlightPositions
+      summary: Трек рейса
+      description: Позиции рейса по времени, от ранних к поздним.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница позиций
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionPage'
+              example:
+                items:
+                  - id: 98110231
+                    flightId: 6254
+                    timePosition: '2026-06-10T07:06:00Z'
+                    latitude: -11.2961
+                    longitude: 159.8102
+                    altitude: 540
+                    velocity: 72.0
+                    heading: 250
+                    onGround: false
+                total: 1
+                limit: 50
+                offset: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────── airports ───────────────────────────────
+
+  /api/v1/airports:
+    get:
+      tags: [airports]
+      operationId: listAirports
+      summary: Список аэропортов
+      description: Аэропорты для карты и выбора в аналитике. FR-05.
+      x-roles: [guest, analyst, admin]
+      security: []
+      parameters:
+        - name: icaoCode
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[A-Z0-9]{4}$'
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AirportType'
+        - name: countryCode
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+        - name: q
+          in: query
+          required: false
+          description: Поиск по названию, городу, коду ICAO или IATA (подстрока, без учёта регистра)
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы. Карта и список выбора аэропорта загружают справочник целиком, поэтому максимум больше, чем у других коллекций
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 50
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница аэропортов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AirportPage'
+              example:
+                items:
+                  - id: 4
+                    icaoCode: AGGB
+                    iataCode: BNY
+                    name: Bellona/Anua Airport
+                    city: Anua
+                    countryCode: SB
+                    latitude: -11.302222
+                    longitude: 159.798333
+                    analysisRadius: 10000
+                    type: small
+                    elevation: 17
+                total: 1
+                limit: 50
+                offset: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/airports/{airportId}:
+    get:
+      tags: [airports]
+      operationId: getAirport
+      summary: Получить аэропорт
+      description: 'Один аэропорт по идентификатору: коды ICAO и IATA, название, координаты, радиус зоны анализа. FR-05.'
+      x-roles: [guest, analyst, admin]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AirportId'
+      responses:
+        '200':
+          description: Аэропорт
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Airport'
+              example:
+                id: 4
+                icaoCode: AGGB
+                iataCode: BNY
+                name: Bellona/Anua Airport
+                city: Anua
+                countryCode: SB
+                latitude: -11.302222
+                longitude: 159.798333
+                analysisRadius: 10000
+                type: small
+                elevation: 17
+        '404':
+          $ref: '#/components/responses/AirportNotFound'
+
+  # ────────────────────────────── congestion ──────────────────────────────
+
+  /api/v1/congestion:
+    get:
+      tags: [congestion]
+      operationId: getCongestion
+      summary: Загруженность за период (JSON или CSV)
+      description: |
+        Интервалы пребывания судов в зоне аэропорта и счётчики за период. Без `airportId` — по
+        всем аэропортам. Формат выбирается заголовком `Accept`:
+        - `application/json` — сводка и страница записей (`limit`/`offset`);
+        - `text/csv` — все записи периода без пагинации (выгрузка, FR-10).
+
+        Сортировка — по `entryTime`, сначала новые. FR-07…FR-10, сценарий 3.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: airportId
+          in: query
+          required: false
+          description: Аэропорт; не указан — по всем аэропортам
+          schema:
+            type: integer
+            minimum: 1
+          example: 4
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          $ref: '#/components/responses/Congestion'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+
+  # ──────────────────────────────── reports ───────────────────────────────
+
+  /api/v1/reports:
+    get:
+      tags: [reports]
+      operationId: listReports
+      summary: Мои сохранённые отчёты
+      description: Отчёты текущего пользователя; владелец определяется по токену. FR-12, сценарий 3.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница отчётов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportPage'
+              example:
+                items:
+                  - id: 4
+                    name: Bellona, 10 июня
+                    airportId: 4
+                    airportName: Bellona/Anua Airport
+                    dateFrom: '2026-06-10'
+                    dateTo: '2026-06-10'
+                    createdAt: '2026-10-15T00:43:00Z'
+                total: 1
+                limit: 50
+                offset: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [reports]
+      operationId: createReport
+      summary: Сохранить отчёт
+      description: |
+        Сохраняет параметры отчёта: имя, аэропорт, период. Аэропорт обязателен — отчёт «по всем
+        аэропортам» не сохраняется. Владелец — текущий пользователь. FR-11, сценарий 3.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreate'
+            example:
+              name: Bellona, 10 июня
+              airportId: 4
+              dateFrom: '2026-06-10'
+              dateTo: '2026-06-10'
+      responses:
+        '201':
+          description: Отчёт сохранён
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+              example:
+                id: 4
+                name: Bellona, 10 июня
+                airportId: 4
+                airportName: Bellona/Anua Airport
+                dateFrom: '2026-06-10'
+                dateTo: '2026-06-10'
+                createdAt: '2026-10-15T00:43:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+  /api/v1/reports/{reportId}:
+    parameters:
+      - $ref: '#/components/parameters/ReportId'
+    get:
+      tags: [reports]
+      operationId: getReport
+      summary: Получить сохранённый отчёт
+      description: Параметры отчёта. Чужой отчёт считается несуществующим (`404`).
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Отчёт
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+              example:
+                id: 4
+                name: Bellona, 10 июня
+                airportId: 4
+                airportName: Bellona/Anua Airport
+                dateFrom: '2026-06-10'
+                dateTo: '2026-06-10'
+                createdAt: '2026-10-15T00:43:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ReportNotFound'
+    delete:
+      tags: [reports]
+      operationId: deleteReport
+      summary: Удалить сохранённый отчёт
+      description: Чужой отчёт считается несуществующим (`404`). FR-12.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Отчёт удалён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ReportNotFound'
+
+  /api/v1/reports/{reportId}/congestion:
+    get:
+      tags: [reports]
+      operationId: getReportCongestion
+      summary: Данные витрины по сохранённому отчёту (JSON или CSV)
+      description: |
+        Та же выборка, что `getCongestion`, с аэропортом и периодом из отчёта. Формат — по
+        заголовку `Accept`; `text/csv` — повторная выгрузка отчёта (FR-12).
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          $ref: '#/components/responses/Congestion'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ReportNotFound'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Токен из `createSession`; содержит идентификатор пользователя и роль.
+
+  headers:
+    Location:
+      description: URI созданного ресурса
+      schema:
+        type: string
+        format: uri-reference
+
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Размер страницы
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 50
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Сколько элементов пропустить
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    DateFrom:
+      name: dateFrom
+      in: query
+      required: true
+      description: Дата начала периода (включительно)
+      schema:
+        type: string
+        format: date
+      example: '2026-06-10'
+    DateTo:
+      name: dateTo
+      in: query
+      required: true
+      description: Дата окончания периода (включительно); не раньше `dateFrom` и не дальше 31 дня от неё
+      schema:
+        type: string
+        format: date
+      example: '2026-06-10'
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 14
+    AircraftId:
+      name: aircraftId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 312
+    FlightId:
+      name: flightId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 6254
+    AirportId:
+      name: airportId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 4
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 4
+
+  responses:
+    Congestion:
+      description: Данные витрины; формат — по заголовку `Accept`
+      headers:
+        Content-Disposition:
+          description: Только для `text/csv` — имя файла выгрузки
+          schema:
+            type: string
+          example: attachment; filename="congestion_AGGB_2026-06-10_2026-06-10.csv"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CongestionReport'
+          example:
+            airportId: 4
+            dateFrom: '2026-06-10'
+            dateTo: '2026-06-10'
+            summary:
+              departures: 0
+              arrivals: 709
+            items:
+              - id: 1893307
+                airportId: 4
+                flightId: 6254
+                callsign: DLH8PJ
+                entryTime: '2026-06-10T07:06:00Z'
+                exitTime: '2026-06-10T07:08:00Z'
+                durationSeconds: 96
+                isDeparture: false
+                isArrival: true
+                maxAltitudeInZone: 540
+                minAltitudeInZone: 310
+            total: 709
+            limit: 50
+            offset: 0
+        text/csv:
+          schema:
+            type: string
+            description: Строка заголовка и по строке на запись; колонки — поля `CongestionEntry` в том же порядке
+          example: |
+            id,airportId,flightId,callsign,entryTime,exitTime,durationSeconds,isDeparture,isArrival,maxAltitudeInZone,minAltitudeInZone
+            1893307,4,6254,DLH8PJ,2026-06-10T07:06:00Z,2026-06-10T07:08:00Z,96,false,true,540,310
+    ValidationError:
+      description: Некорректные данные запроса
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            requiredField:
+              summary: Не заполнено обязательное поле
+              value:
+                type: https://atap.example/problems/validation-error
+                title: Некорректные данные запроса
+                status: 400
+                detail: Не заполнены обязательные поля
+                errors:
+                  - field: email
+                    message: Введите email
+            weakPassword:
+              summary: Пароль не подходит по длине
+              value:
+                type: https://atap.example/problems/validation-error
+                title: Некорректные данные запроса
+                status: 400
+                detail: Пароль не соответствует требованиям
+                errors:
+                  - field: password
+                    message: Пароль должен содержать от 8 до 128 символов
+    InvalidRequest:
+      description: Некорректные данные, неверный период или несуществующий аэропорт
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            startAfterEnd:
+              summary: Начало позже окончания
+              value:
+                type: https://atap.example/problems/invalid-period
+                title: Дата начала не может быть позже даты окончания
+                status: 400
+            tooLong:
+              summary: Период больше 31 дня
+              value:
+                type: https://atap.example/problems/period-too-long
+                title: Период не может быть больше 31 дня
+                status: 400
+            emptyName:
+              summary: Пустое имя отчёта
+              value:
+                type: https://atap.example/problems/validation-error
+                title: Некорректные данные запроса
+                status: 400
+                detail: Не задано имя отчёта
+            unknownAirport:
+              summary: Аэропорт с таким id не существует
+              value:
+                type: https://atap.example/problems/unknown-airport
+                title: Аэропорт не найден
+                status: 400
+                detail: Параметр airportId указывает на несуществующий аэропорт
+    Unauthorized:
+      description: Требуется вход — токена нет, он истёк или сессия завершена
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          example: Bearer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/unauthorized
+            title: Требуется вход в систему
+            status: 401
+    Forbidden:
+      description: Недостаточно прав для операции
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/forbidden
+            title: Недостаточно прав
+            status: 403
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/not-found
+            title: Ресурс не найден
+            status: 404
+    AirportNotFound:
+      description: Аэропорт не найден
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/not-found
+            title: Аэропорт не найден
+            status: 404
+    ReportNotFound:
+      description: Отчёт не найден или принадлежит другому пользователю
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/not-found
+            title: Отчёт не найден
+            status: 404
+    UserNotFound:
+      description: Пользователь не найден
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/not-found
+            title: Пользователь не найден
+            status: 404
+    UserConflict:
+      description: Логин или email уже заняты
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/user-already-exists
+            title: Пользователь с таким логином или email уже существует
+            status: 409
+    NotAcceptable:
+      description: Запрошенный в `Accept` формат не поддерживается (доступны `application/json` и `text/csv`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/not-acceptable
+            title: Формат не поддерживается
+            status: 406
+    ServiceUnavailable:
+      description: Источник данных временно недоступен; клиент оставляет последние полученные данные (сценарий 4)
+      headers:
+        Retry-After:
+          description: Через сколько секунд повторить запрос
+          schema:
+            type: integer
+          example: 60
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/service-unavailable
+            title: Источник данных недоступен
+            status: 503
+    UnsupportedMediaType:
+      description: Тип тела запроса (`Content-Type`) не поддерживается
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://atap.example/problems/unsupported-media-type
+            title: Тип содержимого не поддерживается
+            status: 415
+
+  schemas:
+
+    # ── общие ──
+
+    Problem:
+      type: object
+      description: Описание ошибки по RFC 9457 (Problem Details for HTTP APIs)
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Идентификатор типа ошибки
+        title:
+          type: string
+          description: Краткое описание для человека
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          description: Пояснение к конкретному случаю
+        instance:
+          type: string
+          format: uri-reference
+          description: URI запроса, вызвавшего ошибку
+        errors:
+          type: array
+          description: Расширение RFC 9457 — ошибки по отдельным полям; нужно сценарию 1, где показывается, какое поле не заполнено
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                description: Имя поля тела запроса или параметра
+              message:
+                type: string
+
+    PageMeta:
+      type: object
+      required: [total, limit, offset]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: Всего элементов по фильтру
+        limit:
+          type: integer
+          minimum: 1
+        offset:
+          type: integer
+          minimum: 0
+
+    # ── пользователи и сессии ──
+
+    Role:
+      type: string
+      enum: [analyst, admin]
+      description: Роль в БД. Гость — запрос без токена, в БД не хранится.
+
+    User:
+      type: object
+      required: [id, username, email, role, createdAt]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          examples: [8]
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+          examples: [admin1]
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          examples: [admin1@atap.com]
+        role:
+          $ref: '#/components/schemas/Role'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    UserCreate:
+      type: object
+      required: [username, email, password]
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+          description: От 8 до 128 символов. Верхняя граница защищает хэширование от чрезмерно длинных значений
+        role:
+          $ref: '#/components/schemas/Role'
+          description: Только для администратора; по умолчанию `analyst`
+
+    UserReplace:
+      type: object
+      required: [username, email, role]
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        role:
+          $ref: '#/components/schemas/Role'
+
+    UserPatch:
+      type: object
+      description: JSON Merge Patch — передаются только изменяемые поля
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        role:
+          $ref: '#/components/schemas/Role'
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+          description: От 8 до 128 символов. Верхняя граница защищает хэширование от чрезмерно длинных значений
+
+    UserPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+
+    SessionCreate:
+      type: object
+      required: [username, password]
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+        password:
+          type: string
+          format: password
+          minLength: 1
+          writeOnly: true
+
+    Session:
+      type: object
+      required: [accessToken, tokenType, expiresIn, user]
+      properties:
+        accessToken:
+          type: string
+          description: JWT-токен доступа
+        tokenType:
+          type: string
+          const: Bearer
+        expiresIn:
+          type: integer
+          minimum: 1
+          description: Срок действия токена, секунд
+        user:
+          $ref: '#/components/schemas/User'
+
+    # ── воздушные суда, рейсы, позиции ──
+
+    Icao24:
+      type: string
+      pattern: '^[A-F0-9]{6}$'
+      description: Адрес ICAO 24-bit, 6 шестнадцатеричных символов
+      examples: [3C6752]
+
+    Aircraft:
+      type: object
+      required: [id, icao24]
+      properties:
+        id:
+          type: integer
+        icao24:
+          $ref: '#/components/schemas/Icao24'
+        registration:
+          type: [string, 'null']
+          maxLength: 50
+        model:
+          type: [string, 'null']
+          maxLength: 100
+        manufacturer:
+          type: [string, 'null']
+          maxLength: 100
+        originCountry:
+          type: [string, 'null']
+          maxLength: 100
+
+    AircraftPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Aircraft'
+
+    Flight:
+      type: object
+      required: [id, callsign]
+      properties:
+        id:
+          type: integer
+        callsign:
+          type: string
+          maxLength: 10
+        aircraftId:
+          type: [integer, 'null']
+        firstSeen:
+          type: [string, 'null']
+          format: date-time
+        lastSeen:
+          type: [string, 'null']
+          format: date-time
+
+    FlightPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Flight'
+
+    CurrentFlight:
+      type: object
+      description: Последняя позиция рейса (строка `mart.current_flights_map`)
+      required: [flightId, callsign, latitude, longitude]
+      properties:
+        flightId:
+          type: integer
+        icao24:
+          $ref: '#/components/schemas/Icao24'
+        callsign:
+          type: string
+          maxLength: 10
+        originCountry:
+          type: [string, 'null']
+        aircraftModel:
+          type: [string, 'null']
+        latitude:
+          $ref: '#/components/schemas/Latitude'
+        longitude:
+          $ref: '#/components/schemas/Longitude'
+        altitude:
+          type: [integer, 'null']
+          minimum: 0
+          description: Высота, м
+        velocity:
+          type: [number, 'null']
+          exclusiveMinimum: 0
+          description: Скорость, м/с
+        heading:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 360
+          description: Курс, градусы
+        onGround:
+          type: [boolean, 'null']
+
+    Position:
+      type: object
+      required: [id, flightId, timePosition, latitude, longitude]
+      properties:
+        id:
+          type: integer
+          format: int64
+        flightId:
+          type: integer
+        timePosition:
+          type: string
+          format: date-time
+        latitude:
+          $ref: '#/components/schemas/Latitude'
+        longitude:
+          $ref: '#/components/schemas/Longitude'
+        altitude:
+          type: [integer, 'null']
+          minimum: 0
+          description: Высота, м
+        velocity:
+          type: [number, 'null']
+          exclusiveMinimum: 0
+          description: Скорость, м/с
+        heading:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 360
+        onGround:
+          type: [boolean, 'null']
+
+    PositionPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Position'
+
+    Latitude:
+      type: number
+      format: double
+      minimum: -90
+      maximum: 90
+
+    Longitude:
+      type: number
+      format: double
+      minimum: -180
+      maximum: 180
+
+    # ── аэропорты ──
+
+    AirportType:
+      type: string
+      enum: [large, medium, small]
+
+    Airport:
+      type: object
+      required: [id, icaoCode, name, latitude, longitude, analysisRadius]
+      properties:
+        id:
+          type: integer
+        icaoCode:
+          type: string
+          minLength: 4
+          maxLength: 4
+        iataCode:
+          type: [string, 'null']
+          minLength: 3
+          maxLength: 3
+        name:
+          type: string
+          maxLength: 200
+        city:
+          type: [string, 'null']
+          maxLength: 100
+        countryCode:
+          type: [string, 'null']
+          minLength: 2
+          maxLength: 2
+        latitude:
+          $ref: '#/components/schemas/Latitude'
+        longitude:
+          $ref: '#/components/schemas/Longitude'
+        analysisRadius:
+          type: integer
+          exclusiveMinimum: 0
+          default: 10000
+          description: Радиус зоны анализа, м
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/AirportType'
+            - type: 'null'
+        elevation:
+          type: [integer, 'null']
+          minimum: -500
+          description: Высота над уровнем моря, м
+
+    AirportPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Airport'
+
+    # ── витрина ──
+
+    CongestionEntry:
+      type: object
+      description: Интервал пребывания судна в зоне аэропорта (расстояние < `analysisRadius`, высота ≤ 610 м)
+      required: [id, airportId, flightId, callsign, entryTime, exitTime, durationSeconds, isDeparture, isArrival]
+      properties:
+        id:
+          type: integer
+          format: int64
+        airportId:
+          type: integer
+        flightId:
+          type: integer
+        callsign:
+          type: string
+          maxLength: 10
+        entryTime:
+          type: string
+          format: date-time
+        exitTime:
+          type: string
+          format: date-time
+          description: Позже `entryTime`
+        durationSeconds:
+          type: integer
+          minimum: 0
+        isDeparture:
+          type: boolean
+        isArrival:
+          type: boolean
+        maxAltitudeInZone:
+          type: [integer, 'null']
+          minimum: 0
+          description: Максимальная высота в зоне, м
+        minAltitudeInZone:
+          type: [integer, 'null']
+          minimum: 0
+          description: Минимальная высота в зоне, м
+
+    CongestionReport:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [airportId, dateFrom, dateTo, summary, items]
+          properties:
+            airportId:
+              type: [integer, 'null']
+              description: Аэропорт; `null` — по всем аэропортам
+            dateFrom:
+              type: string
+              format: date
+            dateTo:
+              type: string
+              format: date
+            summary:
+              type: object
+              description: Счётчики по всему периоду, не только по текущей странице; общее число записей — `total`
+              required: [departures, arrivals]
+              properties:
+                departures:
+                  type: integer
+                  minimum: 0
+                arrivals:
+                  type: integer
+                  minimum: 0
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/CongestionEntry'
+
+    # ── отчёты ──
+
+    Report:
+      type: object
+      required: [id, name, airportId, airportName, dateFrom, dateTo, createdAt]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        airportId:
+          type: integer
+        airportName:
+          type: string
+          readOnly: true
+        dateFrom:
+          type: string
+          format: date
+        dateTo:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ReportCreate:
+      type: object
+      required: [name, airportId, dateFrom, dateTo]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+          description: Не пустое и не из одних пробелов
+        airportId:
+          type: integer
+          minimum: 1
+        dateFrom:
+          type: string
+          format: date
+        dateTo:
+          type: string
+          format: date
+          description: Не раньше `dateFrom` и не дальше 31 дня от неё
+
+    ReportPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Report'
