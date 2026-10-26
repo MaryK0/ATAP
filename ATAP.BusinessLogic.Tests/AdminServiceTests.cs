@@ -51,6 +51,41 @@ public class AdminServiceTests
 
     [Fact]
     [AllureFeature("Users management")]
+    public async Task DeleteUserAsync_WithAdminUser_ShouldThrowAndKeepUser()
+    {
+        // Arrange (FR-16: пользователя с ролью admin удалить нельзя; «удалить себя» — тот же случай,
+        // потому что удалять пользователей может только администратор)
+        var repo = new MockUserRepository();
+        var adminId = await repo.CreateAsync(Users.AdminRoot());
+        var service = new AdminService(repo);
+
+        // Act + Assert
+        await Assert.ThrowsAsync<AdminDeletionForbiddenException>(() => service.DeleteUserAsync(adminId));
+        var remaining = await service.GetAllUsersAsync();
+        Assert.Contains(remaining, u => u.UserId == adminId && u.Role == "admin");
+    }
+
+    [Fact]
+    [AllureFeature("Users management")]
+    public async Task DeleteUserAsync_WithAnalystWhileAdminExists_ShouldRemoveOnlyAnalyst()
+    {
+        // Arrange (администратор в системе есть, удаляется обычный пользователь — правило не мешает)
+        var repo = new MockUserRepository();
+        await repo.CreateAsync(Users.AdminRoot());
+        var analystId = await repo.CreateAsync(Users.AnalystAnna());
+        var service = new AdminService(repo);
+
+        // Act
+        var deleted = await service.DeleteUserAsync(analystId);
+
+        // Assert
+        Assert.True(deleted);
+        var remaining = await service.GetAllUsersAsync();
+        Assert.Equal(new[] { "root" }, remaining.Select(u => u.Username).ToArray());
+    }
+
+    [Fact]
+    [AllureFeature("Users management")]
     public async Task UpdateUserAsync_WithExistingUser_ShouldPersistChangesAndReturnTrue()
     {
         // Arrange

@@ -26,7 +26,7 @@ declare -A PROJECTS=(
   [integration]="ATAP.IntegrationTests/ATAP.IntegrationTests.csproj"
   [e2e]="ATAP.E2ETests/ATAP.E2ETests.csproj"
 )
-UNIT_PROJECTS=("ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj" "ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj")
+UNIT_PROJECTS=("ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj" "ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj" "ATAP.BlazorUI.Tests/ATAP.BlazorUI.Tests.csproj")
 
 log() { echo "[run-tests] $*" >&2; }
 

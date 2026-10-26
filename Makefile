@@ -4,6 +4,7 @@ CONSOLE  := ATAP.ConsoleUI/ATAP.ConsoleUI.csproj
 BLAZOR   := ATAP.BlazorUI/ATAP.BlazorUI.csproj
 BL_TESTS := ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj
 DA_TESTS := ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj
+UI_TESTS := ATAP.BlazorUI.Tests/ATAP.BlazorUI.Tests.csproj
 IT_TESTS := ATAP.IntegrationTests/ATAP.IntegrationTests.csproj
 E2E_TESTS := ATAP.E2ETests/ATAP.E2ETests.csproj
 API      := ATAP.Api/ATAP.Api.csproj
@@ -11,7 +12,7 @@ STAND    := scripts/test-stand.sh
 CONFIG   ?= Debug
 PUBLISH  := publish/console
 
-.PHONY: all build release restore clean test test-unit test-dataaccess test-offline test-integration \
+.PHONY: all build release restore clean test test-unit test-dataaccess test-ui test-offline test-integration \
         test-e2e test-stand-all run-api test-coverage test-coverage-all test-allure run run-blazor publish help db-up db-down db-seed demo-setup \
         api-lint api-scenario api-check
 
@@ -52,8 +53,13 @@ test-dataaccess: build
 	$(DOTNET) test $(DA_TESTS) \
 		--configuration $(CONFIG) --no-build --logger "console;verbosity=normal"
 
+## Unit-тесты форм интерфейса (ATAP.BlazorUI.Tests: RegisterViewModel, LoginViewModel; offline, mock-сервисы)
+test-ui: build
+	$(DOTNET) test $(UI_TESTS) \
+		--configuration $(CONFIG) --no-build --logger "console;verbosity=normal"
+
 ## Все unit-тесты (offline: без БД, без сети — см. TESTING.md, требование 11)
-test-offline: test-unit test-dataaccess
+test-offline: test-unit test-dataaccess test-ui
 
 ## Интеграционные тесты на отдельном стенде в Docker (PostgreSQL + Redis, стенд удаляется всегда; нужен запущенный Docker)
 test-integration: build

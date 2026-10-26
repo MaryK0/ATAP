@@ -31,15 +31,15 @@ bash scripts/demo-usecase.sh all       # все варианты по поряд
 
 | № | Вариант использования | Команда | Что сказать и показать |
 |---|---|---|---|
-| 1 | Регистрация | `bash scripts/demo-usecase.sh 1` | Уникальность логина и email, роль `analyst`, пароль хранится хэшем. Код: `AuthServiceTests.RegisterAsync_*`. **Честно:** проверка пустых полей формы (ViewModel) тестами не покрыта |
+| 1 | Регистрация | `bash scripts/demo-usecase.sh 1` | Уникальность логина и email, роль `analyst`, пароль хранится хэшем. Код: `AuthServiceTests.RegisterAsync_*`, форма — `RegisterViewModelTests` (пустой логин, email, пароль: сообщение о первом пустом поле, сервис не вызывается; занятые логин или email; сбой сервиса) |
 | 2 | Авторизация | `… 2` | Верный вход, неверный пароль и неизвестный логин дают одинаковый отказ. Показать и E2E: шаги 3–4 (отказ и успешный вход по HTTP) |
-| 3 | Фильтры на карте | `… 3` | Карта: рейсы из материализованного представления, аэропорты, кэш Redis; область `bbox` в API. **Честно:** фильтры по высоте и стране (FR-06) не реализованы, поэтому и теста нет |
+| 3 | Фильтры на карте | `… 3` | Область, высота, страна (FR-06): граничные значения, область через меридиан 180°, сочетание фильтров; в API параметры `bbox`, `minAltitude`, `maxAltitude`, `originCountry`. **Честно:** в интерфейсе Blazor фильтров нет (он работает без API) |
 | 4 | Фильтры в витрине | `… 4` | Период и аэропорт: границы периода, «дата начала позже даты окончания» → ошибка, пустой аэропорт, счётчики вылетов и прилётов, повтор запроса из кэша. Самый полный вариант: все три уровня |
 | 5 | Выгрузка CSV | `… 5` | Строк в CSV столько же, сколько записей, заголовок, пустой отчёт. В E2E — шаг 6 (`Accept: text/csv`) |
 | 6 | Выход | `… 6` | Сессия сбрасывается; в E2E (шаг 11) токен после выхода отклоняется (`401`) |
 | 7 | Таблица пользователей | `… 7` | Список с ролью и датой регистрации, пустой список |
 | 8 | Редактирование пользователя | `… 8` | Смена роли, email, пароля; новый пароль хранится хэшем, по нему можно войти, по старому нельзя |
-| 9 | Удаление пользователя | `… 9` | Удаление вместе с его отчётами (каскад в БД). **Честно:** правило «нельзя удалить admin и себя» есть только в интерфейсах, в сервисе его нет — найдено при подготовке тестов |
+| 9 | Удаление пользователя | `… 9` | Удаление вместе с его отчётами (каскад в БД); **правило «нельзя удалить admin и себя»**: администратора сервис не удаляет (исключение), в хранилище он остаётся |
 | 10 | Добавление пользователя | `… 10` | Нет отдельного метода: интерфейс регистрирует пользователя и меняет роль — оба шага проверены |
 | 11–13 | Airflow (вход, параметры, перезапуск DAG) | `… 11` | **Вне границ ATAP**: это родной интерфейс Airflow, DAG в этом репозитории нет. Тестов нет по определению |
 | 14, 15 | Сохранить отчёт, Мои отчёты | `… 14`, `… 15` | Нет на диаграмме, но реализованы и покрыты; хороший пример E2E (шаги 8–10) |
@@ -47,10 +47,10 @@ bash scripts/demo-usecase.sh all       # все варианты по поряд
 
 ## Тесты на обработку исключений
 
-Команда: `bash scripts/demo-usecase.sh 16`. То же, как в первой лабе, одной строкой:
+Команда: `bash scripts/demo-usecase.sh 16`. То же, как в первой лабе, одной строкой (без Docker):
 
 ```bash
-dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~Exception"
+dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~ShouldThrow"
 ```
 
 | Тест | Что проверяет | Исключение |
@@ -60,8 +60,11 @@ dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~Exception"
 | `AnalyticsServiceTests.ExportToCsvAsync_WithNullReport_ShouldThrowException` | выгрузка CSV от пустого отчёта | `ArgumentNullException` |
 | `SavedReportServiceTests.SaveAsync_WithBlankName_ShouldThrowArgumentException` (два значения: `""` и `"   "`) | сохранение отчёта с пустым именем | `ArgumentException` |
 | `SavedReportServiceTests.SaveAsync_WithInvertedPeriod_ShouldThrowArgumentException` | сохранение отчёта с перевёрнутым периодом | `ArgumentException` |
+| `MapServiceTests.GetCurrentFlightsAsync_WithInvertedAltitudeRange_ShouldThrowArgumentException` | фильтр карты: минимальная высота больше максимальной | `ArgumentException` |
+| `MapServiceTests.GetCurrentFlightsAsync_WithNullFilter_ShouldThrowArgumentNullException` | фильтр карты не задан | `ArgumentNullException` |
+| `AdminServiceTests.DeleteUserAsync_WithAdminUser_ShouldThrowAndKeepUser` | удаление администратора запрещено, он остаётся в хранилище | `AdminDeletionForbiddenException` |
 
-Это 5 тестов-методов, при запуске 6 прогонов (один — `[Theory]` с двумя значениями). Проверка идёт через `Assert.ThrowsAsync<T>(() => ...)`:
+Это 8 тестов-методов, при запуске 9 прогонов (один — `[Theory]` с двумя значениями). Проверка идёт через `Assert.ThrowsAsync<T>(() => ...)`:
 тест вызывает метод и убеждается, что вылетело именно это исключение.
 
 На реальной БД (интеграционные, запускаются тем же `… 16`):
@@ -71,10 +74,11 @@ dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~Exception"
 | `UserRepository_Create_DuplicateUsername_Throws_IntegrationTest` | повторный логин: БД отказывает, строк не добавилось | `PostgresException`, код 23505 (уникальность) |
 | `SavedReportRepository_Create_InvertedPeriod_ViolatesCheck_IntegrationTest` | отчёт с перевёрнутым периодом: БД сама отклоняет | `PostgresException`, код 23514 (`CHECK`) |
 | `SavedReportService_Save_InvalidInput_ThrowsAndStoresNothing_IntegrationTest` | сервис отклоняет пустое имя и перевёрнутый период, в БД ничего не записано | `ArgumentException` |
+| `AdminService_DeleteUser_AdminUser_Throws_IntegrationTest` | администратора удалить нельзя, пользователи и отчёты не изменились | `AdminDeletionForbiddenException` |
 
 ## Если спросят «а покрытие хорошее?»
 
-- по вариантам использования: из 13 вариантов 6 покрыты полностью, 4 частично (с названной причиной), 3 вне границ системы;
+- по вариантам использования: из 13 вариантов 8 покрыты полностью, 2 частично (с названной причиной), 3 вне границ системы;
 - по коду: строки 75,1%, ветви 56,5% при объединении unit и интеграционных (`make test-coverage-all`); бизнес-логика 99,6%,
   все пять репозиториев PostgreSQL и Redis — 100%. Подробности — `TESTING.md` §4 (требование 14).
 

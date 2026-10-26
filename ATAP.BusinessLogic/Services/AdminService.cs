@@ -43,9 +43,21 @@ public class AdminService : IAdminService
         return await _userRepo.UpdateAsync(user);
     }
 
-    public Task<bool> DeleteUserAsync(int userId)
+    /// <summary>
+    /// Удаляет пользователя (FR-16). Пользователя с ролью <c>admin</c> удалить нельзя — в том числе самому себе,
+    /// так как удалять пользователей может только администратор. Несуществующий пользователь — <c>false</c>.
+    /// </summary>
+    /// <exception cref="AdminDeletionForbiddenException">Удаляемый пользователь — администратор.</exception>
+    public async Task<bool> DeleteUserAsync(int userId)
     {
-        return _userRepo.DeleteAsync(userId);
+        var users = await _userRepo.GetAllAsync();
+        var user = users.FirstOrDefault(u => u.UserId == userId);
+        if (user == null) return false;
+
+        if (user.Role == "admin")
+            throw new AdminDeletionForbiddenException();
+
+        return await _userRepo.DeleteAsync(userId);
     }
 
     private static string HashPassword(string password)

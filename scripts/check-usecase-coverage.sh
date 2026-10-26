@@ -9,7 +9,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 DOC="docs/use-case-coverage.md"
 LIST="$(mktemp)"; trap 'rm -f "$LIST"' EXIT
 
-for project in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.IntegrationTests ATAP.E2ETests; do
+for project in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.BlazorUI.Tests ATAP.IntegrationTests ATAP.E2ETests; do
   dotnet test "$project" --no-build --list-tests 2>/dev/null | sed -n 's/^    //p'
 done > "$LIST"
 echo "Тестов в проектах: $(wc -l < "$LIST")"

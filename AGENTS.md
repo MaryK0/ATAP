@@ -88,7 +88,8 @@ ATAP/
 ├─ ATAP.ConsoleUI/              # технологический UI: меню по ролям, Serilog
 ├─ ATAP.BusinessLogic.Tests/    # unit-тесты бизнес-логики (моки, Builders, Mothers, случайный порядок)
 ├─ ATAP.DataAccess.Tests/       # unit-тесты SqlQueryFactory без БД
-├─ ATAP.IntegrationTests/       # 40 интеграционных тестов на стенде (PostgreSQL + Redis), один файл — один тест
+├─ ATAP.BlazorUI.Tests/         # unit-тесты форм интерфейса (RegisterViewModel, LoginViewModel)
+├─ ATAP.IntegrationTests/       # 41 интеграционный тест на стенде (PostgreSQL + Redis), один файл — один тест
 ├─ ATAP.E2ETests/               # E2E-тест демонстрационного сценария по HTTP
 ├─ ATAP.Api/                    # REST API (ASP.NET Core 8) по web_lr2/openapi.yaml: срез WebLab#3, Swagger UI
 ├─ ci/                          # контейнер запуска тестов (Dockerfile.tests, run-tests.sh), Jenkins (jenkins/), скрипты этапов
@@ -122,10 +123,11 @@ ATAP/
 | Собрать решение | `make build` или `dotnet build ATAP.sln -c Debug` | ✅ 0 ошибок |
 | Поднять БД и кэш | `make db-up` или `docker compose -f db/docker-compose.yml up -d` | ✅ PostgreSQL :5433, Redis :6379 |
 | Поднять БД и залить демо-рейсы | `make demo-setup` | ✅ 100 рейсов на карте |
-| Unit-тесты бизнес-логики | `make test-unit` | ✅ 74/74, без БД и сети |
+| Unit-тесты бизнес-логики | `make test-unit` | ✅ 76/76, без БД и сети |
 | Unit-тесты SqlQueryFactory | `make test-dataaccess` | ✅ 12/12, без БД и сети |
-| Все unit-тесты | `make test-offline` | ✅ 86/86 |
-| Интеграционные тесты | `make test-integration` (отдельный стенд в Docker, удаляется после прогона) | ✅ 40/40 |
+| Unit-тесты форм интерфейса | `make test-ui` | ✅ 15/15, без БД и сети |
+| Все unit-тесты | `make test-offline` | ✅ 103/103 |
+| Интеграционные тесты | `make test-integration` (отдельный стенд в Docker, удаляется после прогона) | ✅ 41/41 |
 | E2E-тест демонстрационного сценария | `make test-e2e` (стенд: PostgreSQL, Redis, ATAP.Api) | ✅ 1/1 |
 | unit → integration → e2e на одном стенде | `make test` (= `make test-stand-all`) | ✅ |
 | REST API локально | `make run-api` → http://localhost:5080, Swagger UI `/swagger` (нужны БД и Redis) | ✅ |
@@ -135,7 +137,7 @@ ATAP/
 | Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 75,1% |
 | Диаграмма вариантов использования с тестами | открыть `docs/use-case-demo.html` в браузере: клик по варианту на диаграмме показывает тесты и команду | ✅ 15 областей |
 | Показ тестов по вариантам использования | `bash scripts/demo-usecase.sh list \| <номер> \| all` (шпаргалка — `docs/demo-usecases.md`) | ✅ 15 вариантов |
-| Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — `docs/use-case-coverage.md`) | ✅ 74 ссылки на тесты, все найдены |
+| Покрытие вариантов использования тестами | `bash scripts/check-usecase-coverage.sh` (таблица — `docs/use-case-coverage.md`) | ✅ все названные тесты найдены |
 | Allure-отчёт | `make test-allure` → `allure-report/` (нужен `npm i -g allure-commandline`) | ✅ |
 | Веб-приложение | `make run-blazor` → http://localhost:5075 (нужны БД и Redis) | ✅ |
 | ConsoleUI | `make run` (нужна БД) | ✅ |
@@ -169,7 +171,7 @@ ATAP/
   `db/create_tables.sql`. Новые поля добавлять сначала в ER и DDL, затем в *Db-модели и DTO.
 - **Бизнес-правила:** `date_from ≤ date_to`; период витрины не больше 31 дня, обе границы (`dateFrom`, `dateTo`) включаются; судно «в зоне» при
   расстоянии < `analysis_radius` (метры) и `altitude ≤ 610`; пароли только хэшированные, длина пароля при создании и смене — 8–128 символов;
-  удалять пользователя с ролью `admin` нельзя.
+  удалять пользователя с ролью `admin` нельзя (правило в `AdminService`, исключение `AdminDeletionForbiddenException`).
 - **Хранилище:** PostgreSQL + PostGIS; MongoDB-репозитории — альтернатива, не основной вариант.
 - **Кэш (Redis):** опционален; система обязана работать без него (NFR-R2).
 - **Слои:** View → ViewModel → сервис → репозиторий; ViewModel не обращается к репозиторию напрямую.

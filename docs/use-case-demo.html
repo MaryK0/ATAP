@@ -86,7 +86,7 @@
 </main>
 
 <footer>
-  Итог по диаграмме: 13 вариантов — 6 покрыты полностью, 4 частично, 3 вне границ системы. Таблица и проверка существования тестов:
+  Итог по диаграмме: 13 вариантов — 8 покрыты полностью, 2 частично, 3 вне границ системы. Таблица и проверка существования тестов:
   <code>docs/use-case-coverage.md</code>, <code>bash scripts/check-usecase-coverage.sh</code>.
 </footer>
 
@@ -95,19 +95,28 @@ const E2E = "DemoScenario_AnalystAnalyzesCongestionAndSavesReport_E2ETest";
 
 // Данные вариантов использования. Имена тестов проверяет scripts/check-usecase-coverage.sh.
 const UC = {
-  1: { title: "Регистрация → ввод почты и пароля, создание логина", actor: "Гость", fr: "FR-01", status: "part",
-       note: "Проверка пустых полей формы (RegisterViewModel) тестами не покрыта. Регистрации нет в срезе API, поэтому E2E её не затрагивает.",
+  1: { title: "Регистрация → ввод почты и пароля, создание логина", actor: "Гость", fr: "FR-01", status: "ok",
+       note: "Проверка пустых полей формы покрыта unit-тестами RegisterViewModel: сообщение о первом незаполненном поле, сервис при этом не вызывается. Регистрации нет в срезе API, поэтому E2E её не затрагивает.",
        unit: ["AuthServiceTests.RegisterAsync_WithNewUser_ShouldSucceed", "AuthServiceTests.RegisterAsync_WithExistingUsername_ShouldFail",
               "AuthServiceTests.RegisterAsync_WithExistingEmail_ShouldFail",
               "AuthServiceMoqTests.RegisterAsync_WithNewUser_ShouldCallCreateAsyncWithHashedPasswordAndAnalystRole",
-              "AuthServiceMoqTests.RegisterAsync_WithExistingUsername_ShouldNeverCallCreateAsync"],
+              "AuthServiceMoqTests.RegisterAsync_WithExistingUsername_ShouldNeverCallCreateAsync",
+              "RegisterViewModelTests.RegisterAsync_WithEmptyUsername_ShouldShowLoginErrorAndNotCallService",
+              "RegisterViewModelTests.RegisterAsync_WithEmptyEmail_ShouldShowEmailErrorAndNotCallService",
+              "RegisterViewModelTests.RegisterAsync_WithEmptyPassword_ShouldShowPasswordErrorAndNotCallService",
+              "RegisterViewModelTests.RegisterAsync_WithAllFieldsEmpty_ShouldReportFirstMissingFieldFirst",
+              "RegisterViewModelTests.RegisterAsync_WithValidData_ShouldSucceedAndPassFieldsToService",
+              "RegisterViewModelTests.RegisterAsync_WhenLoginOrEmailTaken_ShouldShowDuplicateMessage"],
        integ: ["AuthService_RegisterThenLogin_AuthenticatesNewUser_IntegrationTest", "AuthService_Register_DuplicateUsername_ReturnsFalse_IntegrationTest",
                "UserRepository_Create_PersistsUser_IntegrationTest", "UserRepository_Create_DuplicateUsername_Throws_IntegrationTest"],
-       e2e: [], files: "AuthServiceTests.cs; IntegrationTests/BusinessLogic/AuthService_Register*" },
+       e2e: [], files: "AuthServiceTests.cs; BlazorUI.Tests/RegisterViewModelTests.cs; IntegrationTests/BusinessLogic/AuthService_Register*" },
   2: { title: "Авторизация → ввод логина и пароля", actor: "Гость", fr: "FR-02", status: "ok", note: "",
        unit: ["AuthServiceTests.LoginAsync_WithValidCredentials_ShouldSucceed", "AuthServiceTests.LoginAsync_WithInvalidPassword_ShouldFail",
               "AuthServiceTests.LoginAsync_WithNonExistentUser_ShouldFail", "AuthServiceTests.GetCurrentUserAsync_AfterLogin_ShouldReturnUser",
-              "AuthServiceMoqTests.LoginAsync_WithNonExistentUser_ShouldOnlyQueryRepositoryOnce"],
+              "AuthServiceMoqTests.LoginAsync_WithNonExistentUser_ShouldOnlyQueryRepositoryOnce",
+              "LoginViewModelTests.LoginAsync_WithEmptyUsername_ShouldShowErrorAndNotCallService",
+              "LoginViewModelTests.LoginAsync_WithEmptyPassword_ShouldShowErrorAndNotCallService",
+              "LoginViewModelTests.LoginAsync_WithWrongCredentials_ShouldShowSingleMessageForAnyCause"],
        integ: ["AuthService_RegisterThenLogin_AuthenticatesNewUser_IntegrationTest", "AuthService_Login_WrongPassword_ReturnsNull_IntegrationTest",
                "UserRepository_GetByUsername_ReturnsSeededAdmin_IntegrationTest", "UserRepository_GetByUsername_UnknownUser_ReturnsNull_IntegrationTest"],
        e2e: [E2E + " — шаги 3–4: неверный и верный вход по HTTP"], files: "AuthServiceTests.cs; E2ETests/DemoScenario_*" },
@@ -150,11 +159,12 @@ const UC = {
        unit: ["AdminServiceTests.UpdateUserAsync_WithExistingUser_ShouldPersistChangesAndReturnTrue", "AdminServiceTests.UpdateUserAsync_WithNewPassword_ShouldStoreDifferentHashThanPlainPassword",
               "AdminServiceTests.UpdateUserAsync_WithNonExistentUser_ShouldReturnFalse"],
        integ: ["AdminService_UpdateUser_ChangesRoleAndPassword_IntegrationTest", "UserRepository_Update_ChangesRoleAndEmail_IntegrationTest"], e2e: [], files: "AdminServiceTests.cs" },
-  9: { title: "Удалить пользователя", actor: "Администратор", fr: "FR-16", status: "part",
-       note: "Правило «нельзя удалить admin и себя» реализовано только в интерфейсах, в сервисе его нет, поэтому проверить его тестом сервиса нельзя (найдено при подготовке тестов).",
-       unit: ["AdminServiceTests.DeleteUserAsync_WithExistingUser_ShouldRemoveAndReturnTrue", "AdminServiceTests.DeleteUserAsync_WithNonExistentUser_ShouldReturnFalse"],
-       integ: ["AdminService_DeleteUser_RemovesUserWithReports_IntegrationTest", "UserRepository_Delete_CascadesSavedReports_IntegrationTest",
-               "UserRepository_Delete_UnknownUser_ReturnsFalse_IntegrationTest"], e2e: [], files: "AdminServiceTests.cs" },
+  9: { title: "Удалить пользователя", actor: "Администратор", fr: "FR-16", status: "ok",
+       note: "Правило «нельзя удалить admin и себя» реализовано в AdminService: удалять пользователей может только администратор, поэтому удаление себя — тот же случай, что удаление администратора.",
+       unit: ["AdminServiceTests.DeleteUserAsync_WithExistingUser_ShouldRemoveAndReturnTrue", "AdminServiceTests.DeleteUserAsync_WithNonExistentUser_ShouldReturnFalse",
+              "AdminServiceTests.DeleteUserAsync_WithAdminUser_ShouldThrowAndKeepUser", "AdminServiceTests.DeleteUserAsync_WithAnalystWhileAdminExists_ShouldRemoveOnlyAnalyst"],
+       integ: ["AdminService_DeleteUser_RemovesUserWithReports_IntegrationTest", "AdminService_DeleteUser_AdminUser_Throws_IntegrationTest",
+               "UserRepository_Delete_CascadesSavedReports_IntegrationTest", "UserRepository_Delete_UnknownUser_ReturnsFalse_IntegrationTest"], e2e: [], files: "AdminServiceTests.cs; IntegrationTests/BusinessLogic/AdminService_DeleteUser_*" },
   10: { title: "Добавить пользователя", actor: "Администратор", fr: "FR-14", status: "part",
         note: "Отдельного метода «добавить пользователя» нет: интерфейс регистрирует пользователя и затем меняет роль. Проверены оба шага.",
         unit: ["AuthServiceTests.RegisterAsync_WithNewUser_ShouldSucceed", "AdminServiceTests.UpdateUserAsync_WithExistingUser_ShouldPersistChangesAndReturnTrue"],
@@ -178,14 +188,16 @@ const UC = {
                 "SavedReportRepository_Delete_ForeignUser_KeepsReport_IntegrationTest"],
         e2e: [E2E + " — шаги 9–10"], files: "SavedReportServiceTests.cs" },
   16: { title: "Тесты на обработку исключений (первая лабораторная, требование 2)", actor: "—", fr: "ЛР1", status: "ok", extra: true,
-        note: "ArgumentException (пустое имя, начало периода позже конца), ArgumentNullException (CSV от пустого отчёта). На реальной БД: PostgresException 23505 (уникальность логина) и 23514 (CHECK периода отчёта).",
+        note: "ArgumentException (пустое имя, период и диапазон высот наоборот), ArgumentNullException (пустой отчёт CSV, пустой фильтр), AdminDeletionForbiddenException (удаление администратора). На реальной БД: PostgresException 23505 (уникальность логина) и 23514 (CHECK периода отчёта).",
         unit: ["AnalyticsServiceTests.GetCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException", "AnalyticsServiceTests.GetAllCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException",
                "AnalyticsServiceTests.ExportToCsvAsync_WithNullReport_ShouldThrowException", "SavedReportServiceTests.SaveAsync_WithBlankName_ShouldThrowArgumentException (два значения)",
-               "SavedReportServiceTests.SaveAsync_WithInvertedPeriod_ShouldThrowArgumentException"],
+               "SavedReportServiceTests.SaveAsync_WithInvertedPeriod_ShouldThrowArgumentException",
+               "MapServiceTests.GetCurrentFlightsAsync_WithInvertedAltitudeRange_ShouldThrowArgumentException", "MapServiceTests.GetCurrentFlightsAsync_WithNullFilter_ShouldThrowArgumentNullException",
+               "AdminServiceTests.DeleteUserAsync_WithAdminUser_ShouldThrowAndKeepUser"],
         integ: ["UserRepository_Create_DuplicateUsername_Throws_IntegrationTest", "SavedReportRepository_Create_InvertedPeriod_ViolatesCheck_IntegrationTest",
-                "SavedReportService_Save_InvalidInput_ThrowsAndStoresNothing_IntegrationTest"],
-        e2e: [], files: "AnalyticsServiceTests.cs; SavedReportServiceTests.cs",
-        extraCmd: 'dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~Exception"' }
+                "SavedReportService_Save_InvalidInput_ThrowsAndStoresNothing_IntegrationTest", "AdminService_DeleteUser_AdminUser_Throws_IntegrationTest"],
+        e2e: [], files: "AnalyticsServiceTests.cs; SavedReportServiceTests.cs; MapServiceTests.cs; AdminServiceTests.cs",
+        extraCmd: 'dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~ShouldThrow"' }
 };
 
 // Области на диаграмме (пиксели картинки 813×777). sub: шаг внутри варианта.

@@ -23,9 +23,11 @@ COPY ATAP.BusinessLogic/ATAP.BusinessLogic.csproj ATAP.BusinessLogic/
 COPY ATAP.DataAccess/ATAP.DataAccess.csproj ATAP.DataAccess/
 COPY ATAP.BusinessLogic.Tests/ATAP.BusinessLogic.Tests.csproj ATAP.BusinessLogic.Tests/
 COPY ATAP.DataAccess.Tests/ATAP.DataAccess.Tests.csproj ATAP.DataAccess.Tests/
+COPY ATAP.BlazorUI/ATAP.BlazorUI.csproj ATAP.BlazorUI/
+COPY ATAP.BlazorUI.Tests/ATAP.BlazorUI.Tests.csproj ATAP.BlazorUI.Tests/
 COPY ATAP.IntegrationTests/ATAP.IntegrationTests.csproj ATAP.IntegrationTests/
 COPY ATAP.E2ETests/ATAP.E2ETests.csproj ATAP.E2ETests/
-RUN for p in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.IntegrationTests ATAP.E2ETests; do \
+RUN for p in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.BlazorUI.Tests ATAP.IntegrationTests ATAP.E2ETests; do \
       dotnet restore "$p/$p.csproj"; \
     done
 

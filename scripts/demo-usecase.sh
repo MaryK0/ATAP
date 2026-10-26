@@ -19,20 +19,21 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 BL=ATAP.BusinessLogic.Tests
 DA=ATAP.DataAccess.Tests
+UI=ATAP.BlazorUI.Tests
 IT=ATAP.IntegrationTests
 E2E=ATAP.E2ETests
 
 # ── Описание вариантов: UNIT/DA/INTEG — подстроки имён тестов через «|», E2E=1 — прогнать E2E-тест ──────
 define() {
-  TITLE="" ; UNIT="" ; DA_F="" ; INTEG="" ; E2E_RUN=0 ; FILES="" ; NOTE=""
+  TITLE="" ; UNIT="" ; DA_F="" ; UI_F="" ; INTEG="" ; E2E_RUN=0 ; FILES="" ; NOTE=""
   case "$1" in
     1) TITLE="Регистрация → ввод почты и пароля, создание логина (гость, FR-01)"
-       UNIT="RegisterAsync"; INTEG="AuthService_Register|UserRepository_Create"
-       FILES="ATAP.BusinessLogic.Tests/AuthServiceTests.cs, ATAP.IntegrationTests/BusinessLogic/AuthService_RegisterThenLogin_*"
-       NOTE="Проверка пустых полей формы (RegisterViewModel) тестами не покрыта; регистрации нет в срезе API, поэтому E2E её не затрагивает." ;;
+       UNIT="RegisterAsync"; UI_F="RegisterViewModel"; INTEG="AuthService_Register|UserRepository_Create"
+       FILES="ATAP.BusinessLogic.Tests/AuthServiceTests.cs, ATAP.BlazorUI.Tests/RegisterViewModelTests.cs (форма: пустые поля), ATAP.IntegrationTests/BusinessLogic/AuthService_RegisterThenLogin_*"
+       NOTE="Регистрации нет в срезе API, поэтому E2E её не затрагивает; проверка пустых полей формы — unit-тесты RegisterViewModel." ;;
     2) TITLE="Авторизация → ввод логина и пароля (гость, FR-02)"
-       UNIT="LoginAsync|GetCurrentUserAsync"; INTEG="AuthService_Login|AuthService_RegisterThenLogin|UserRepository_GetByUsername"; E2E_RUN=1
-       FILES="ATAP.BusinessLogic.Tests/AuthServiceTests.cs, ATAP.E2ETests/DemoScenario_*.cs (шаги 3–4)" ;;
+       UNIT="LoginAsync|GetCurrentUserAsync"; UI_F="LoginViewModel"; INTEG="AuthService_Login|AuthService_RegisterThenLogin|UserRepository_GetByUsername"; E2E_RUN=1
+       FILES="ATAP.BusinessLogic.Tests/AuthServiceTests.cs, ATAP.BlazorUI.Tests/LoginViewModelTests.cs, ATAP.E2ETests/DemoScenario_*.cs (шаги 3–4)" ;;
     3) TITLE="Задать фильтры на карте (аналитик, админ, FR-04..FR-06)"
        UNIT="MapService|FlightFilter"; INTEG="Map"; E2E_RUN=1
        FILES="ATAP.BusinessLogic.Tests/FlightFilterTests.cs, MapServiceTests.cs, ATAP.IntegrationTests/BusinessLogic/MapService_GetCurrentFlights_*, ATAP.E2ETests/DemoScenario_*.cs (шаг 1)"
@@ -55,8 +56,8 @@ define() {
        FILES="ATAP.BusinessLogic.Tests/AdminServiceTests.cs, ATAP.IntegrationTests/BusinessLogic/AdminService_UpdateUser_*" ;;
     9) TITLE="Удалить пользователя (админ, FR-16)"
        UNIT="DeleteUserAsync"; INTEG="AdminService_DeleteUser|UserRepository_Delete"
-       FILES="ATAP.BusinessLogic.Tests/AdminServiceTests.cs, ATAP.IntegrationTests/DataAccess/UserRepository_Delete_*"
-       NOTE="Правило «нельзя удалить admin и себя» реализовано только в интерфейсах, в сервисе его нет — тестом сервиса не проверить." ;;
+       FILES="ATAP.BusinessLogic.Tests/AdminServiceTests.cs, ATAP.IntegrationTests/BusinessLogic/AdminService_DeleteUser_*, DataAccess/UserRepository_Delete_*"
+       NOTE="Правило «нельзя удалить admin и себя» реализовано в AdminService: удалять пользователей может только администратор, поэтому удаление себя — тот же случай, что удаление администратора." ;;
     10) TITLE="Добавить пользователя (админ, FR-14)"
        UNIT="RegisterAsync_WithNewUser|UpdateUserAsync_WithExistingUser"; INTEG="AdminService_UpdateUser"
        FILES="ATAP.IntegrationTests/BusinessLogic/AdminService_UpdateUser_ChangesRoleAndPassword_IntegrationTest.cs"
@@ -71,8 +72,8 @@ define() {
        FILES="ATAP.BusinessLogic.Tests/SavedReportServiceTests.cs, ATAP.E2ETests/DemoScenario_*.cs (шаги 9–10)" ;;
     16) TITLE="[первая лабораторная, требование 2] Тесты на обработку исключений"
        UNIT="ShouldThrow"; INTEG="Throws|ViolatesCheck|InvalidInput"
-       FILES="ATAP.BusinessLogic.Tests/AnalyticsServiceTests.cs, ATAP.BusinessLogic.Tests/SavedReportServiceTests.cs, ATAP.IntegrationTests/*_Throws_*, *_ViolatesCheck_*, *_InvalidInput_*"
-       NOTE="Исключения: ArgumentException (пустое имя отчёта, начало периода позже конца), ArgumentNullException (CSV от пустого отчёта); в интеграционных — ошибки БД PostgresException: уникальность логина (23505) и CHECK периода отчёта (23514)." ;;
+       FILES="ATAP.BusinessLogic.Tests/AnalyticsServiceTests.cs, SavedReportServiceTests.cs, MapServiceTests.cs, AdminServiceTests.cs, ATAP.IntegrationTests/*_Throws_*, *_ViolatesCheck_*, *_InvalidInput_*"
+       NOTE="Исключения: ArgumentException (пустое имя отчёта, период и диапазон высот наоборот), ArgumentNullException (CSV от пустого отчёта, пустой фильтр), AdminDeletionForbiddenException (удаление администратора); в интеграционных — PostgresException: уникальность логина (23505) и CHECK периода отчёта (23514)." ;;
     *) return 1 ;;
   esac
 }
@@ -100,9 +101,10 @@ run_usecase() {
   local fail=0
   run_project "$BL" "$UNIT" "unit: бизнес-логика" || fail=1
   run_project "$DA" "$DA_F" "unit: SQL-запросы" || fail=1
+  run_project "$UI" "$UI_F" "unit: формы интерфейса" || fail=1
   if [ -n "$INTEG" ]; then run_project "$IT" "$INTEG" "интеграционные: PostgreSQL и Redis" || fail=1; fi
   if [ "$E2E_RUN" = "1" ]; then run_project "$E2E" "DemoScenario" "E2E: сценарий по HTTP (11 шагов)" || fail=1; fi
-  if [ -z "$UNIT$DA_F$INTEG" ] && [ "$E2E_RUN" = "0" ]; then
+  if [ -z "$UNIT$DA_F$UI_F$INTEG" ] && [ "$E2E_RUN" = "0" ]; then
     echo " Итог: вариант вне границ системы — тестов нет (причина выше)"
     return 0
   fi
