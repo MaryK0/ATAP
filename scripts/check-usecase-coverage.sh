@@ -14,7 +14,14 @@ done > "$LIST"
 echo "Тестов в проектах: $(wc -l < "$LIST")"
 
 # Имена тестов в таблице: Класс.Метод или просто Класс (оканчивается на Tests, IntegrationTest или E2ETest)
-mapfile -t refs < <(grep -oE '`[A-Za-z0-9_]+(Tests|IntegrationTest|E2ETest)(\.[A-Za-z0-9_]+)?`' "$DOC" | tr -d '`' | sort -u)
+PAGE="docs/use-case-demo.html"
+# В таблице имена в обратных кавычках; в HTML — без них: берём слова, оканчивающиеся на Tests / IntegrationTest / E2ETest
+mapfile -t refs < <(
+  {
+    grep -oE '`[A-Za-z0-9_]+(Tests|IntegrationTest|E2ETest)(\.[A-Za-z0-9_]+)?`' "$DOC" | tr -d '`'
+    grep -oE '[A-Za-z0-9_]+(Tests|IntegrationTest|E2ETest)(\.[A-Za-z0-9_]+)?' "$PAGE"
+  } | grep -vE '\.cs$' | sort -u   # имена файлов вида AuthServiceTests.cs — не названия тестов
+)
 
 missing=0
 for ref in "${refs[@]}"; do
@@ -24,5 +31,5 @@ for ref in "${refs[@]}"; do
   fi
 done
 
-echo "Ссылок на тесты в $DOC: ${#refs[@]}, не найдено: $missing"
+echo "Ссылок на тесты в $DOC и $PAGE: ${#refs[@]}, не найдено: $missing"
 [ "$missing" -eq 0 ]

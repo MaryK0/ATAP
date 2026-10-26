@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тесты по вариантам использования ATAP</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2733; --muted: #5b6b7b; --line: #d8dee6;
+    --ok: #1f9d55; --part: #d98e04; --out: #8895a3; --accent: #2b6cb0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, "Segoe UI", sans-serif; }
+  header { padding: 16px 24px 8px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: var(--muted); }
+  main { display: grid; grid-template-columns: minmax(320px, 830px) minmax(320px, 1fr); gap: 20px; padding: 12px 24px 24px; align-items: start; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .figure { position: relative; width: 100%; max-width: 813px; line-height: 0; }
+  .figure img { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .hs { position: absolute; border: 2px solid; border-radius: 50%; background: transparent; cursor: pointer; padding: 0;
+        transition: background .15s, box-shadow .15s; }
+  .hs.ok   { border-color: var(--ok);   background: rgba(31,157,85,.12); }
+  .hs.part { border-color: var(--part); background: rgba(217,142,4,.14); }
+  .hs.out  { border-color: var(--out);  background: rgba(136,149,163,.14); border-style: dashed; }
+  .hs.sub  { border-style: dotted; }
+  .hs:hover, .hs:focus-visible { box-shadow: 0 0 0 3px rgba(43,108,176,.45); outline: none; }
+  .hs.active { box-shadow: 0 0 0 4px var(--accent); background: rgba(43,108,176,.22); }
+  .hs .n { position: absolute; top: -11px; left: -11px; min-width: 22px; height: 22px; border-radius: 11px; background: var(--ink);
+           color: #fff; font: 700 12px/22px system-ui, sans-serif; text-align: center; padding: 0 5px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 2px 0; color: var(--muted); font-size: 13px; line-height: 1.3; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid; vertical-align: -2px; margin-right: 5px; }
+  .legend .ok i { border-color: var(--ok); background: rgba(31,157,85,.2); }
+  .legend .part i { border-color: var(--part); background: rgba(217,142,4,.2); }
+  .legend .out i { border-color: var(--out); border-style: dashed; background: rgba(136,149,163,.2); }
+  .extra { margin-top: 12px; }
+  .extra h3 { margin: 0 0 6px; font-size: 14px; color: var(--muted); font-weight: 600; }
+  .extra button { font: inherit; padding: 6px 10px; margin: 0 6px 6px 0; border: 1px solid var(--line); background: #fff; border-radius: 8px; cursor: pointer; }
+  .extra button:hover, .extra button.active { border-color: var(--accent); background: #eef4fb; }
+  #detail h2 { margin: 0 0 6px; font-size: 19px; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; color: #fff; font-size: 12px; font-weight: 600; vertical-align: 2px; }
+  .badge.ok { background: var(--ok); } .badge.part { background: var(--part); } .badge.out { background: var(--out); }
+  .meta { color: var(--muted); margin: 0 0 10px; }
+  .note { border-left: 4px solid var(--part); background: #fff8eb; padding: 8px 12px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .note.out { border-color: var(--out); background: #f1f4f7; }
+  h3.lvl { margin: 14px 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  ul.tests { margin: 0; padding-left: 18px; }
+  ul.tests li { font: 13px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace; word-break: break-word; margin: 1px 0; }
+  .none { color: var(--muted); font-style: italic; }
+  .cmd { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+  .cmd code { flex: 1; background: #101820; color: #e6edf3; padding: 9px 12px; border-radius: 8px; font: 13px ui-monospace, Consolas, monospace; overflow-x: auto; white-space: nowrap; }
+  .cmd button { border: 0; background: var(--accent); color: #fff; padding: 0 14px; border-radius: 8px; cursor: pointer; font: inherit; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .files { font: 13px ui-monospace, Consolas, monospace; color: var(--muted); word-break: break-word; }
+  .empty { color: var(--muted); padding: 30px 8px; text-align: center; }
+  footer { padding: 0 24px 24px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Тесты по вариантам использования</h1>
+  <p>Нажмите на вариант использования на диаграмме: справа появятся его тесты и команда запуска. Номера совпадают с <code>scripts/demo-usecase.sh</code>.</p>
+</header>
+
+<main>
+  <section class="card" aria-label="Диаграмма вариантов использования">
+    <div class="figure" id="figure">
+      <img src="../web_lr1/diagrams/use_case.png" alt="Диаграмма вариантов использования ATAP" width="813" height="777">
+    </div>
+    <div class="legend">
+      <span class="ok"><i></i>покрыт тестами</span>
+      <span class="part"><i></i>покрыт частично (причина в описании)</span>
+      <span class="out"><i></i>вне границ системы</span>
+      <span>пунктир по точкам — шаг внутри варианта (открывает тот же вариант)</span>
+    </div>
+    <div class="extra">
+      <h3>Нет на диаграмме, но есть в приложении и в тестах</h3>
+      <div id="extra-buttons"></div>
+    </div>
+  </section>
+
+  <section class="card" id="detail" aria-live="polite">
+    <div class="empty">Выберите вариант использования на диаграмме слева.</div>
+  </section>
+</main>
+
+<footer>
+  Итог по диаграмме: 13 вариантов — 6 покрыты полностью, 4 частично, 3 вне границ системы. Таблица и проверка существования тестов:
+  <code>docs/use-case-coverage.md</code>, <code>bash scripts/check-usecase-coverage.sh</code>.
+</footer>
+
+<script>
+const E2E = "DemoScenario_AnalystAnalyzesCongestionAndSavesReport_E2ETest";
+
+// Данные вариантов использования. Имена тестов проверяет scripts/check-usecase-coverage.sh.
+const UC = {
+  1: { title: "Регистрация → ввод почты и пароля, создание логина", actor: "Гость", fr: "FR-01", status: "part",
+       note: "Проверка пустых полей формы (RegisterViewModel) тестами не покрыта. Регистрации нет в срезе API, поэтому E2E её не затрагивает.",
+       unit: ["AuthServiceTests.RegisterAsync_WithNewUser_ShouldSucceed", "AuthServiceTests.RegisterAsync_WithExistingUsername_ShouldFail",
+              "AuthServiceTests.RegisterAsync_WithExistingEmail_ShouldFail",
+              "AuthServiceMoqTests.RegisterAsync_WithNewUser_ShouldCallCreateAsyncWithHashedPasswordAndAnalystRole",
+              "AuthServiceMoqTests.RegisterAsync_WithExistingUsername_ShouldNeverCallCreateAsync"],
+       integ: ["AuthService_RegisterThenLogin_AuthenticatesNewUser_IntegrationTest", "AuthService_Register_DuplicateUsername_ReturnsFalse_IntegrationTest",
+               "UserRepository_Create_PersistsUser_IntegrationTest", "UserRepository_Create_DuplicateUsername_Throws_IntegrationTest"],
+       e2e: [], files: "AuthServiceTests.cs; IntegrationTests/BusinessLogic/AuthService_Register*" },
+  2: { title: "Авторизация → ввод логина и пароля", actor: "Гость", fr: "FR-02", status: "ok", note: "",
+       unit: ["AuthServiceTests.LoginAsync_WithValidCredentials_ShouldSucceed", "AuthServiceTests.LoginAsync_WithInvalidPassword_ShouldFail",
+              "AuthServiceTests.LoginAsync_WithNonExistentUser_ShouldFail", "AuthServiceTests.GetCurrentUserAsync_AfterLogin_ShouldReturnUser",
+              "AuthServiceMoqTests.LoginAsync_WithNonExistentUser_ShouldOnlyQueryRepositoryOnce"],
+       integ: ["AuthService_RegisterThenLogin_AuthenticatesNewUser_IntegrationTest", "AuthService_Login_WrongPassword_ReturnsNull_IntegrationTest",
+               "UserRepository_GetByUsername_ReturnsSeededAdmin_IntegrationTest", "UserRepository_GetByUsername_UnknownUser_ReturnsNull_IntegrationTest"],
+       e2e: [E2E + " — шаги 3–4: неверный и верный вход по HTTP"], files: "AuthServiceTests.cs; E2ETests/DemoScenario_*" },
+  3: { title: "Задать фильтры на карте", actor: "Аналитик, администратор", fr: "FR-04, FR-05, FR-06", status: "part",
+       note: "Фильтры карты (FR-06: видимая область, высота, страна) в приложении не реализованы. Проверены сама карта и область bbox на уровне API; фильтров по высоте и стране нет.",
+       unit: ["MapServiceTests.GetCurrentFlightsAsync_ShouldReturnFlights", "MapServiceTests.GetAirportsAsync_ShouldReturnAirports",
+              "MapServiceTests.GetAirportsAsync_WithCache_ShouldReturnFromCache", "MapServiceMoqTests.GetAirportsAsync_WhenCacheHit_ShouldNeverQueryRepository"],
+       integ: ["MapRepository_GetCurrentFlights_ReturnsFreshPositions_IntegrationTest", "MapRepository_GetAirports_ReadsDatabaseThenCache_IntegrationTest",
+               "MapService_GetCurrentFlights_ReturnsFreshFlights_IntegrationTest", "MapService_GetAirports_SecondCallServedFromRedis_IntegrationTest"],
+       e2e: [E2E + " — шаг 1: карта, счётчик рейсов, ETag/304, bbox"], files: "MapServiceTests.cs; IntegrationTests/DataAccess/MapRepository_*" },
+  4: { title: "Задать фильтры в витрине: период и аэропорт", actor: "Аналитик, администратор", fr: "FR-07, FR-08, FR-09", status: "ok", note: "",
+       unit: ["AnalyticsServiceTests.GetCongestionAsync_ShouldReturnReport", "AnalyticsServiceTests.GetCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException",
+              "AnalyticsServiceTests.GetCongestionAsync_WhenStartEqualsEnd_ShouldSucceed", "AnalyticsServiceTests.GetCongestionAsync_WithEmptyData_ShouldReturnZeroCounts",
+              "AnalyticsServiceTests.GetCongestionAsync_WithCacheHit_ShouldReturnCachedReportWithoutTouchingRepository",
+              "AnalyticsServiceTests.GetAllCongestionAsync_ShouldReturnReportForAllAirports", "SqlQueryFactoryTests (запросы витрины)"],
+       integ: ["AnalyticsRepository_GetCongestion_HalfOpenPeriod_IntegrationTest", "AnalyticsRepository_GetCongestion_FiltersByAirport_IntegrationTest",
+               "AnalyticsRepository_GetCongestion_AirportWithoutData_ReturnsEmpty_IntegrationTest", "AnalyticsRepository_GetCongestion_WithoutDetails_IntegrationTest",
+               "AnalyticsRepository_GetAllCongestion_EntryAndExitInsidePeriod_IntegrationTest", "AnalyticsService_GetCongestion_CountsDeparturesAndArrivals_IntegrationTest",
+               "AnalyticsService_GetCongestion_SecondCallServedFromRedis_IntegrationTest"],
+       e2e: [E2E + " — шаг 5: витрина и счётчики; шаг 7: ошибки периода и аэропорта"], files: "AnalyticsServiceTests.cs; IntegrationTests/DataAccess/AnalyticsRepository_*" },
+  5: { title: "Выгрузить CSV-отчёт", actor: "Аналитик, администратор", fr: "FR-10", status: "ok", note: "",
+       unit: ["AnalyticsServiceTests.ExportToCsvAsync_WithEntries_ShouldSerializeEachEntryAsCsvRow", "AnalyticsServiceTests.ExportToCsvAsync_WithEmptyEntries_ShouldReturnOnlyHeaderRow",
+              "AnalyticsServiceTests.ExportToCsvAsync_WithNullReport_ShouldThrowException"],
+       integ: ["AnalyticsService_ExportToCsv_RowCountEqualsEntries_IntegrationTest"],
+       e2e: [E2E + " — шаг 6: строк в CSV столько же, сколько записей"], files: "AnalyticsServiceTests.cs" },
+  6: { title: "Выйти из аккаунта", actor: "Аналитик, администратор", fr: "FR-03", status: "ok", note: "",
+       unit: ["AuthServiceTests.LogoutAsync_AfterLogin_ShouldClearCurrentSession", "AuthServiceTests.LogoutAsync_WithoutActiveSession_ShouldNotThrow",
+              "AuthServiceTests.GetCurrentUserAsync_WithoutLogin_ShouldReturnNull"],
+       integ: ["AuthService_Logout_ClearsCurrentUser_IntegrationTest"],
+       e2e: [E2E + " — шаг 11: токен после выхода отклоняется (401)"], files: "AuthServiceTests.cs" },
+  7: { title: "Открыть таблицу с пользователями", actor: "Администратор", fr: "FR-13", status: "ok", note: "",
+       unit: ["AdminServiceTests.GetAllUsersAsync_WithSeededUsers_ShouldReturnMappedDtos", "AdminServiceTests.GetAllUsersAsync_WithNoUsers_ShouldReturnEmptyList"],
+       integ: ["UserRepository_GetAll_ReturnsSeededUsers_IntegrationTest"], e2e: [], files: "AdminServiceTests.cs" },
+  8: { title: "Редактировать пользователя", actor: "Администратор", fr: "FR-15", status: "ok", note: "",
+       unit: ["AdminServiceTests.UpdateUserAsync_WithExistingUser_ShouldPersistChangesAndReturnTrue", "AdminServiceTests.UpdateUserAsync_WithNewPassword_ShouldStoreDifferentHashThanPlainPassword",
+              "AdminServiceTests.UpdateUserAsync_WithNonExistentUser_ShouldReturnFalse"],
+       integ: ["AdminService_UpdateUser_ChangesRoleAndPassword_IntegrationTest", "UserRepository_Update_ChangesRoleAndEmail_IntegrationTest"], e2e: [], files: "AdminServiceTests.cs" },
+  9: { title: "Удалить пользователя", actor: "Администратор", fr: "FR-16", status: "part",
+       note: "Правило «нельзя удалить admin и себя» реализовано только в интерфейсах, в сервисе его нет, поэтому проверить его тестом сервиса нельзя (найдено при подготовке тестов).",
+       unit: ["AdminServiceTests.DeleteUserAsync_WithExistingUser_ShouldRemoveAndReturnTrue", "AdminServiceTests.DeleteUserAsync_WithNonExistentUser_ShouldReturnFalse"],
+       integ: ["AdminService_DeleteUser_RemovesUserWithReports_IntegrationTest", "UserRepository_Delete_CascadesSavedReports_IntegrationTest",
+               "UserRepository_Delete_UnknownUser_ReturnsFalse_IntegrationTest"], e2e: [], files: "AdminServiceTests.cs" },
+  10: { title: "Добавить пользователя", actor: "Администратор", fr: "FR-14", status: "part",
+        note: "Отдельного метода «добавить пользователя» нет: интерфейс регистрирует пользователя и затем меняет роль. Проверены оба шага.",
+        unit: ["AuthServiceTests.RegisterAsync_WithNewUser_ShouldSucceed", "AdminServiceTests.UpdateUserAsync_WithExistingUser_ShouldPersistChangesAndReturnTrue"],
+        integ: ["AdminService_UpdateUser_ChangesRoleAndPassword_IntegrationTest"], e2e: [], files: "IntegrationTests/BusinessLogic/AdminService_UpdateUser_*" },
+  11: { title: "Авторизация в Airflow", actor: "Администратор", fr: "FR-17", status: "out",
+        note: "Вне границ ATAP: вход в родной интерфейс Airflow (README §3, AGENTS §3). Тестов нет по определению.", unit: [], integ: [], e2e: [], files: "" },
+  12: { title: "Управлять параметрами Airflow", actor: "Администратор", fr: "FR-17", status: "out",
+        note: "Вне границ ATAP: параметры настраиваются в интерфейсе Airflow. Тестов нет по определению.", unit: [], integ: [], e2e: [], files: "" },
+  13: { title: "Перезапустить DAG", actor: "Администратор", fr: "FR-17", status: "out",
+        note: "Вне границ ATAP: DAG спроектированы, в этом репозитории их нет. Тестов нет по определению.", unit: [], integ: [], e2e: [], files: "" },
+  14: { title: "Сохранить отчёт", actor: "Аналитик", fr: "FR-11", status: "ok", extra: true, note: "",
+        unit: ["SavedReportServiceTests.SaveAsync_WithValidDto_ShouldPersistReportForUser", "SavedReportServiceTests.SaveAsync_WithBlankName_ShouldThrowArgumentException",
+               "SavedReportServiceTests.SaveAsync_WithInvertedPeriod_ShouldThrowArgumentException", "SavedReportServiceTests.SaveAsync_WithSingleDayPeriod_ShouldSucceed"],
+        integ: ["SavedReportService_Save_ThenGetByUser_IntegrationTest", "SavedReportService_Save_InvalidInput_ThrowsAndStoresNothing_IntegrationTest",
+                "SavedReportRepository_Create_ThenGetByUser_ReturnsReportWithAirportName_IntegrationTest", "SavedReportRepository_Create_InvertedPeriod_ViolatesCheck_IntegrationTest"],
+        e2e: [E2E + " — шаг 8"], files: "SavedReportServiceTests.cs" },
+  15: { title: "Мои отчёты: список и удаление", actor: "Аналитик", fr: "FR-12", status: "ok", extra: true, note: "",
+        unit: ["SavedReportServiceTests.GetByUserAsync_WithSavedReports_ShouldReturnOnlyThatUsersReports", "SavedReportServiceTests.DeleteAsync_WithOwnedReport_ShouldRemoveIt",
+               "SavedReportServiceTests.DeleteAsync_WithForeignReportId_ShouldNotRemoveAnything"],
+        integ: ["SavedReportRepository_GetByUser_ReturnsOnlyOwnReports_IntegrationTest", "SavedReportRepository_Delete_Owner_RemovesReport_IntegrationTest",
+                "SavedReportRepository_Delete_ForeignUser_KeepsReport_IntegrationTest"],
+        e2e: [E2E + " — шаги 9–10"], files: "SavedReportServiceTests.cs" },
+  16: { title: "Тесты на обработку исключений (первая лабораторная, требование 2)", actor: "—", fr: "ЛР1", status: "ok", extra: true,
+        note: "ArgumentException (пустое имя, начало периода позже конца), ArgumentNullException (CSV от пустого отчёта). На реальной БД: PostgresException 23505 (уникальность логина) и 23514 (CHECK периода отчёта).",
+        unit: ["AnalyticsServiceTests.GetCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException", "AnalyticsServiceTests.GetAllCongestionAsync_WhenStartDateAfterEndDate_ShouldThrowException",
+               "AnalyticsServiceTests.ExportToCsvAsync_WithNullReport_ShouldThrowException", "SavedReportServiceTests.SaveAsync_WithBlankName_ShouldThrowArgumentException (два значения)",
+               "SavedReportServiceTests.SaveAsync_WithInvertedPeriod_ShouldThrowArgumentException"],
+        integ: ["UserRepository_Create_DuplicateUsername_Throws_IntegrationTest", "SavedReportRepository_Create_InvertedPeriod_ViolatesCheck_IntegrationTest",
+                "SavedReportService_Save_InvalidInput_ThrowsAndStoresNothing_IntegrationTest"],
+        e2e: [], files: "AnalyticsServiceTests.cs; SavedReportServiceTests.cs",
+        extraCmd: 'dotnet test ATAP.BusinessLogic.Tests --filter "FullyQualifiedName~Exception"' }
+};
+
+// Области на диаграмме (пиксели картинки 813×777). sub: шаг внутри варианта.
+const HOTSPOTS = [
+  { id: 3,  x: 310, y: 5,   w: 205, h: 55 },  { id: 4,  x: 310, y: 92,  w: 205, h: 55 },
+  { id: 5,  x: 600, y: 82,  w: 187, h: 60 },  { id: 6,  x: 322, y: 182, w: 180, h: 42 },
+  { id: 13, x: 602, y: 172, w: 184, h: 54 },  { id: 11, x: 332, y: 255, w: 160, h: 56 },
+  { id: 12, x: 580, y: 261, w: 229, h: 52 },  { id: 9,  x: 607, y: 356, w: 171, h: 50 },
+  { id: 7,  x: 305, y: 394, w: 212, h: 52 },  { id: 10, x: 608, y: 442, w: 170, h: 50 },
+  { id: 8,  x: 600, y: 520, w: 186, h: 56 },  { id: 1,  x: 340, y: 642, w: 145, h: 40 },
+  { id: 1,  x: 588, y: 608, w: 210, h: 76, sub: true }, { id: 2,  x: 340, y: 720, w: 145, h: 38 },
+  { id: 2,  x: 606, y: 722, w: 176, h: 48, sub: true }
+];
+
+const W = 813, H = 777;
+const figure = document.getElementById('figure');
+const detail = document.getElementById('detail');
+const STATUS = { ok: 'покрыт', part: 'покрыт частично', out: 'вне границ системы' };
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function list(items, emptyText) {
+  if (!items.length) return `<div class="none">${emptyText}</div>`;
+  return '<ul class="tests">' + items.map(t => `<li>${esc(t)}</li>`).join('') + '</ul>';
+}
+
+function copy(text, btn) {
+  const done = () => { const old = btn.textContent; btn.textContent = 'Скопировано'; setTimeout(() => btn.textContent = old, 1200); };
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done); return; }
+  const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { /* буфер недоступен */ }
+  document.body.removeChild(ta);
+}
+
+function show(id) {
+  const u = UC[id];
+  document.querySelectorAll('.hs, .extra button').forEach(el => el.classList.toggle('active', Number(el.dataset.uc) === id));
+  const cmd = u.extraCmd || `bash scripts/demo-usecase.sh ${id}`;
+  const hasNoCases = !u.unit.length && !u.integ.length && !u.e2e.length;
+  detail.innerHTML = `
+    <h2>${u.extra ? '' : '№ ' + id + '. '}${esc(u.title)} <span class="badge ${u.status}">${STATUS[u.status]}</span></h2>
+    <p class="meta">${esc(u.actor)} · ${esc(u.fr)}${u.extra ? ' · нет на диаграмме' : ''}</p>
+    ${u.note ? `<div class="note ${u.status === 'out' ? 'out' : ''}">${esc(u.note)}</div>` : ''}
+    ${hasNoCases ? '' : `
+      <h3 class="lvl">Unit-тесты (без БД)</h3>${list(u.unit, 'нет')}
+      <h3 class="lvl">Интеграционные (PostgreSQL и Redis)</h3>${list(u.integ, 'нет')}
+      <h3 class="lvl">E2E (сценарий по HTTP)</h3>${list(u.e2e, 'не затрагивает этот вариант')}
+      <h3 class="lvl">Запустить и показать</h3>
+      <div class="cmd"><code>${esc(cmd)}</code><button type="button" id="copy">Копировать</button></div>
+      <p class="hint">${u.extraCmd ? 'Без Docker, только unit-тесты. С интеграционными: bash scripts/demo-usecase.sh ' + id
+        : 'Интеграционные и E2E идут на стенде в Docker: один раз <code>eval "$(bash scripts/test-stand.sh up)"</code>, в конце <code>bash scripts/test-stand.sh down</code>.'}</p>
+      ${u.files ? `<h3 class="lvl">Код тестов</h3><div class="files">${esc(u.files)}</div>` : ''}`}
+  `;
+  const b = document.getElementById('copy'); if (b) b.onclick = () => copy(cmd, b);
+}
+
+for (const h of HOTSPOTS) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = `hs ${UC[h.id].status}${h.sub ? ' sub' : ''}`;
+  b.dataset.uc = h.id;
+  b.setAttribute('aria-label', `Вариант использования ${h.id}: ${UC[h.id].title}`);
+  b.style.cssText = `left:${h.x / W * 100}%;top:${h.y / H * 100}%;width:${h.w / W * 100}%;height:${h.h / H * 100}%`;
+  if (!h.sub) b.innerHTML = `<span class="n">${h.id}</span>`;
+  b.onclick = () => show(h.id);
+  figure.appendChild(b);
+}
+
+const extra = document.getElementById('extra-buttons');
+for (const id of [14, 15, 16]) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.uc = id; b.textContent = `${id}. ${UC[id].title.split(' (')[0]}`;
+  b.onclick = () => show(id);
+  extra.appendChild(b);
+}
+</script>
+</body>
+</html>
