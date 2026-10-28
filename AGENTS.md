@@ -131,7 +131,7 @@ ATAP/
 | E2E-тест демонстрационного сценария | `make test-e2e` (стенд: PostgreSQL, Redis, ATAP.Api) | ✅ 1/1 |
 | unit → integration → e2e на одном стенде | `make test` (= `make test-stand-all`) | ✅ |
 | REST API локально | `make run-api` → http://localhost:5080, Swagger UI `/swagger` (нужны БД и Redis) | ✅ |
-| Jenkins в Docker (CI) | `bash ci/jenkins.sh up` → http://localhost:8085; сборка: `bash ci/jenkins.sh build [integration\|e2e]` | ✅ |
+| Jenkins в Docker (CI) | `bash ci/jenkins.sh up` → http://localhost:8085; сборка: `bash ci/jenkins.sh build` | ✅ |
 | Имитация запросов E2E и захват трафика | `bash scripts/capture-traffic.sh` → `docs/traffic/` | ✅ 15 запросов |
 | Покрытие строк и ветвлений (unit) | `make test-coverage` → `TestResults/CoverageReport/index.html` | ✅ цифры в `TESTING.md` |
 | Покрытие unit + интеграционных | `make test-coverage-all` → `TestResults/CoverageAll/` | ✅ строки 75,1% |
