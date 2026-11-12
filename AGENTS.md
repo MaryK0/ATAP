@@ -85,13 +85,14 @@ ATAP/
 │   ├─ Services/AppStateService.cs
 │   ├─ wwwroot/js/map.js        #   карта Leaflet
 │   └─ Program.cs               #   DI, выбор хранилища по StorageBackend
-├─ ATAP.ConsoleUI/              # технологический UI: меню по ролям, Serilog
+├─ ATAP.ConsoleUI/              # технологический UI: меню по ролям, Serilog, HTTP API v1
+├─ ATAP.ApiClient/              # HTTP-адаптер сервисных интерфейсов для ConsoleUI
 ├─ ATAP.BusinessLogic.Tests/    # unit-тесты бизнес-логики (моки, Builders, Mothers, случайный порядок)
 ├─ ATAP.DataAccess.Tests/       # unit-тесты SqlQueryFactory без БД
 ├─ ATAP.BlazorUI.Tests/         # unit-тесты форм интерфейса (RegisterViewModel, LoginViewModel)
 ├─ ATAP.IntegrationTests/       # 41 интеграционный тест на стенде (PostgreSQL + Redis), один файл — один тест
 ├─ ATAP.E2ETests/               # E2E-тест демонстрационного сценария по HTTP
-├─ ATAP.Api/                    # REST API (ASP.NET Core 8) по web_lr2/openapi.yaml: срез WebLab#3, Swagger UI
+├─ ATAP.Api/                    # REST API: прежний v1 + полный v1 (web_lr2/openapi.yaml), Swagger UI
 ├─ ci/                          # контейнер запуска тестов (Dockerfile.tests, run-tests.sh), Jenkins (jenkins/), скрипты этапов
 ├─ Jenkinsfile                  # конвейер unit -> integration -> e2e, отчёт Allure с историей
 ├─ docker-compose.test.yml      # тестовый стенд: postgres-test, redis-test, db-e2e, atap-api
@@ -147,14 +148,18 @@ ATAP/
 | Вся проверка контракта | `make api-check` | ✅ |
 
 Строка подключения по умолчанию: `Host=localhost;Port=5433;Database=atap_db;Username=postgres;Password=mysecretpassword`.
-`StorageBackend` в `ATAP.ConsoleUI/appsettings.json` = `mongodb`; для работы с PostgreSQL запускать
-`dotnet run --project ATAP.ConsoleUI -- --StorageBackend=postgres`.
+ConsoleUI обращается к API v1: `Api:BaseUrl` в appsettings либо переменная `ATAP_API_URL`.
+ConsoleUI больше не использует StorageBackend и не подключается к БД напрямую.
+Авторизация API — подписанный HS256 JWT (Bearer), срок 1 час. Проверяются подпись,
+issuer/audience, срок и активность jti. Logout и смена пароля отзывают сессии;
+актуальная роль читается из БД. Ключ настраивается через Jwt__Key.
+Перед запуском v1 на существующей БД выполнить `make db-migrate`.
 
 ### Планируемые проверки (для ещё не реализованных частей)
 
 | Часть | Планируемая проверка |
 |---|---|
-| REST API (WebLab#3) | реализован срез (10 из 23 операций), E2E-тест проходит; остальные операции и контрактные тесты по [`web_lr2/openapi.yaml`](web_lr2/openapi.yaml): каждый `operationId` — успешный ответ и описанные ошибки; сценарии `web_lr2/mock-scenario.mjs` можно направить на реальный сервер через `MOCK_URL` |
+| REST API (WebLab#3) | v1 реализует 25 операций по `web_lr2/openapi.yaml`; `make test-lr3` проверяет реальный API, E2E, HTTP-адаптер TUI и страницы Blazor. Демонстрация: `web_lr3/README.md` |
 | Dockerfile веб-приложения (ADR-0003) | `docker compose up` поднимает приложение, БД и Redis; `GET /` → 200 |
 | Airflow DAG (FR-17) | ошибка OpenSky API → запись в лог, следующий цикл повторяет загрузку |
 | Хэш паролей PBKDF2 (ADR-0004) | unit-тест: одинаковый пароль у двух пользователей → разные хэши; в `dds.users` нет паролей в открытом виде |
@@ -162,6 +167,17 @@ ATAP/
 | Нагрузка (NFR-P1) | k6: `GET /api/v1/flights/current` — 95 % запросов ≤ 1000 мс при 50 запросах в секунду |
 | Радиус зоны в метрах | тест витрины: судно в 9 км от аэропорта при `analysis_radius = 10000` попадает в зону, в 11 км — нет |
 | Период витрины ≤ 31 дня | запрос с периодом больше 31 дня отклоняется с сообщением, запрос к БД не выполняется |
+
+### WebLab#3 — актуальное дополнение от 11.11.2026
+
+Полный прогон `make test-lr3`: 109 unit, 42 integration, 1 E2E v1 и проверки всех 25 операций v1
+реальными HTTP-запросами по схемам. TUI HTTP-сценарий выполнен при одновременно работающем Blazor.
+Единственный API — `/api/v1`; актуальный контракт — `web_lr2/openapi.yaml`. Пошаговый прогон:
+`make test-lr3-stages` (аэропорты → вход/выход → остальные операции и интерфейсы).
+Описание этапов — `web_lr3/stages.md`. Прежний E2E обновлён под POST login/logout.
+Проверка страниц Blazor по HTTP не является браузерным тестом всех его кнопок.
+`make api-mutation` демонстрирует обнаружение отсутствующего обязательного поля реального ответа
+и успешный повтор после восстановления. Запуск и ограничения — `web_lr3/README.md`.
 
 ## 7. Правила согласованности (обязательны для ИИ)
 

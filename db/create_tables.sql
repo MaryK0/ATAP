@@ -105,6 +105,23 @@ CREATE TABLE IF NOT EXISTS dds.saved_reports (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Persistent asynchronous export jobs (WebLab#3).
+CREATE TABLE IF NOT EXISTS dds.report_exports (
+    id UUID PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES dds.users(user_id) ON DELETE CASCADE,
+    airport_id INTEGER REFERENCES dds.airports(airport_id),
+    date_from DATE NOT NULL,
+    date_to DATE NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT 'queued'
+        CHECK (status IN ('queued','running','completed','failed')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    lease_until TIMESTAMPTZ,
+    result BYTEA,
+    error TEXT,
+    CHECK (date_to >= date_from AND date_to - date_from < 31)
+);
+CREATE INDEX IF NOT EXISTS idx_report_exports_queue ON dds.report_exports(status, created_at);
+
 -- =====================================================
 -- 3. mart (аналитические витрины)
 -- =====================================================
@@ -245,7 +262,8 @@ GRANT SELECT ON mart.current_flights_map TO admin;
 
 -- 1. Пользователи
 INSERT INTO dds.users (username, email, password_hash, role) VALUES
-('admin', 'admin@atap.com', 'admin123', 'admin')
+-- Demo password: Admin#2026. Only the salted PBKDF2 hash is stored.
+('admin', 'admin@atap.com', 'pbkdf2-sha256$120000$jASZdR/ox++lleFc92FBaQ==$N4Chr5AV2f/4N4iNFsRbz9WGR/UOOjC/6QrPFG8IHaw=', 'admin')
 ON CONFLICT (username) DO NOTHING;
 
 -- 2. Аэропорты

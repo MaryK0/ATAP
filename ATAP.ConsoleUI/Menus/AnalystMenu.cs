@@ -161,7 +161,7 @@ public class AnalystMenu : IMenu
             var report = await _analyticsService.GetCongestionAsync(
                 selected.AirportId,
                 selected.DateFrom.ToDateTime(TimeOnly.MinValue),
-                selected.DateTo.ToDateTime(TimeOnly.MinValue).AddDays(1));
+                selected.DateTo.ToDateTime(TimeOnly.MinValue));
 
             _lastReport = report;
             Console.Clear();

@@ -1,6 +1,7 @@
 namespace ATAP.Api.Dtos;
 
 /// <summary>Схема <c>ReportCreate</c>. Поля необязательные на уровне привязки: проверка и сообщения — в контроллере.</summary>
+[System.Text.Json.Serialization.JsonUnmappedMemberHandling(System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow)]
 public sealed class ReportCreateRequest
 {
     public string? Name { get; set; }

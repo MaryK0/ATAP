@@ -14,7 +14,7 @@ PUBLISH  := publish/console
 
 .PHONY: all build release restore clean test test-unit test-dataaccess test-ui test-offline test-integration \
         test-e2e test-stand-all run-api test-coverage test-coverage-all test-allure run run-blazor publish help db-up db-down db-seed demo-setup \
-        api-lint api-scenario api-check
+        api-lint api-scenario api-check api-test api-mutation db-migrate test-lr3 test-lr3-stages
 
 API_SPEC     := web_lr2/openapi.yaml
 API_LINT_CFG := web_lr2/redocly.yaml
@@ -173,6 +173,12 @@ help:
 	@echo "  api-lint         Линтер OpenAPI + проверка примеров по схемам (web_lr2/openapi.yaml)"
 	@echo "  api-scenario     Многошаговые сценарии на mock-сервере Prism"
 	@echo "  api-check        api-lint + api-scenario"
+	@echo "       Проверка контракта v1 и примеров (ЛР3)"
+	@echo "  api-test      Проверка реального API v1 на изолированном стенде"
+	@echo "  api-mutation  Демонстрация обнаружения нарушения контракта"
+	@echo "  test-lr3         Полная проверка ЛР3, TUI и Blazor"
+	@echo "  test-lr3-stages  Поэтапно: аэропорты, вход/выход, остальные операции и интерфейсы"
+	@echo "  db-migrate    Добавить таблицу фоновых выгрузок в существующую БД"
 
 ## Контракт REST API (WebLab#2): линтер OpenAPI + проверка примеров запросов и ответов по схемам (нужен Node.js 18+)
 api-lint:
@@ -184,3 +190,24 @@ api-scenario:
 
 ## Вся проверка контракта: линтер, примеры по схемам, mock-сценарии
 api-check: api-lint api-scenario
+
+## WebLab#3: live API tests, isolated Docker database, no Prism
+api-test:
+	npm ci --prefix web_lr3 --no-audit --no-fund
+	bash $(STAND) with bash scripts/test-api-contract.sh
+
+api-mutation:
+	npm ci --prefix web_lr3 --no-audit --no-fund
+	bash scripts/demo-contract-mutation.sh
+
+test-lr3: build api-lint
+	npm ci --prefix web_lr3 --no-audit --no-fund
+	bash $(STAND) with bash scripts/test-lr3.sh
+
+## Same checks with explicit stage gates: airports, auth, remaining operations and UI compatibility
+test-lr3-stages: build api-lint
+	npm ci --prefix web_lr3 --no-audit --no-fund
+	bash $(STAND) with bash scripts/test-lr3-stages.sh
+
+db-migrate:
+	docker compose -f db/docker-compose.yml exec -T postgres psql -U postgres -d atap_db -v ON_ERROR_STOP=1 < db/add_api.sql

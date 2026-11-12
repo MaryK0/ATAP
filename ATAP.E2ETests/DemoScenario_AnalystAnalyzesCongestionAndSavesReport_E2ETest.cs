@@ -74,19 +74,20 @@ public class DemoScenario_AnalystAnalyzesCongestionAndSavesReport_E2ETest
             Assert.Contains("Bearer", guestCongestion.Headers.WwwAuthenticate.ToString());
 
             // ── Шаг 3. Неверный пароль: одинаковый отказ для неверного пароля и неизвестного логина ─
-            using var wrongPassword = await PostJson(http, "/api/v1/sessions",
+            using var wrongPassword = await PostJson(http, "/api/v1/login",
                 new { username = E2EEnvironment.AnalystUsername, password = "wrong-password" });
             await AssertProblem(wrongPassword, HttpStatusCode.Unauthorized, "invalid-credentials");
-            using var unknownUser = await PostJson(http, "/api/v1/sessions", new { username = "nobody", password = "wrong-password" });
+            using var unknownUser = await PostJson(http, "/api/v1/login", new { username = "nobody", password = "wrong-password" });
             await AssertProblem(unknownUser, HttpStatusCode.Unauthorized, "invalid-credentials");
 
             // ── Шаг 4. Вход аналитика (FR-02) ─────────────────────────────────────────────────────
-            using var login = await PostJson(http, "/api/v1/sessions",
+            using var login = await PostJson(http, "/api/v1/login",
                 new { username = E2EEnvironment.AnalystUsername, password = E2EEnvironment.AnalystPassword });
             Assert.Equal(HttpStatusCode.Created, login.StatusCode);
             var session = JsonDocument.Parse(await login.Content.ReadAsStringAsync()).RootElement;
             token = session.GetProperty("accessToken").GetString();
             Assert.False(string.IsNullOrEmpty(token));
+            Assert.Matches("^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$", token!);
             Assert.Equal("Bearer", session.GetProperty("tokenType").GetString());
             Assert.Equal("analyst", session.GetProperty("user").GetProperty("role").GetString());
             Assert.False(session.GetProperty("user").TryGetProperty("password", out _));
@@ -154,7 +155,7 @@ public class DemoScenario_AnalystAnalyzesCongestionAndSavesReport_E2ETest
             reportId = null;
 
             // ── Шаг 11. Выход (FR-03): токен больше не принимается ───────────────────────────────
-            using var logout = await http.DeleteAsync("/api/v1/sessions/current");
+            using var logout = await http.PostAsync("/api/v1/logout", null);
             Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
             using var afterLogout = await http.GetAsync("/api/v1/reports");
             await AssertProblem(afterLogout, HttpStatusCode.Unauthorized, "unauthorized");

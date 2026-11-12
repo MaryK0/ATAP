@@ -16,7 +16,7 @@ public class UserDb
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
-    public string Role { get; set; } = "client";
+    public string Role { get; set; } = "analyst";
     public DateTime CreatedAt { get; set; }       // ← добавлен
     public DateTime? SubscriptionExpiresAt { get; set; } // ← добавлен
 }

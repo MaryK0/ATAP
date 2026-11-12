@@ -69,8 +69,8 @@ async function startPrism() {
 // ── Сценарий 3 из README: аналитик анализирует загруженность аэропорта ─────────────────────
 async function analystScenario() {
   console.log('\nСценарий «Анализ загруженности» (аналитик; README §6, сценарий 3)');
-  const login = await call('POST', '/api/v1/sessions', { body: { username: 'e.morozova', password: 'S3cure!pass' } });
-  check('createSession → 201, токен и пользователь', login.status === 201 && typeof login.json?.accessToken === 'string' && ['analyst', 'admin'].includes(login.json?.user?.role), `status=${login.status}`);
+  const login = await call('POST', '/api/v1/login', { body: { username: 'e.morozova', password: 'S3cure!pass' } });
+  check('login → 201, токен и пользователь', login.status === 201 && typeof login.json?.accessToken === 'string' && ['analyst', 'admin'].includes(login.json?.user?.role), `status=${login.status}`);
   const token = login.json?.accessToken;
 
   const airports = await call('GET', '/api/v1/airports?limit=10000');
@@ -110,16 +110,16 @@ async function analystScenario() {
   const gone = await call('GET', `/api/v1/reports/${reportId}`, { token, prefer: 'code=404' });
   check('getReport после удаления: документированная ошибка 404', gone.status === 404 && gone.ct.includes('application/problem+json'), `status=${gone.status}`);
 
-  const logout = await call('DELETE', '/api/v1/sessions/current', { token });
-  check('deleteCurrentSession → 204 (выход)', logout.status === 204, `status=${logout.status}`);
+  const logout = await call('POST', '/api/v1/logout', { token });
+  check('logout → 204 (выход)', logout.status === 204, `status=${logout.status}`);
 }
 
 // ── Администратор: CRUD пользователя и частичное обновление ────────────────────────────────
 async function adminScenario() {
   console.log('\nСценарий «Администрирование пользователей» (CRUD и PATCH; README §6, процесс 3)');
-  const login = await call('POST', '/api/v1/sessions', { body: { username: 'admin1', password: 'admin123' } });
+  const login = await call('POST', '/api/v1/login', { body: { username: 'admin1', password: 'admin123' } });
   const token = login.json?.accessToken;
-  check('createSession → 201, роль admin', login.status === 201 && login.json?.user?.role === 'admin', `status=${login.status}`);
+  check('login → 201, роль admin', login.status === 201 && login.json?.user?.role === 'admin', `status=${login.status}`);
 
   const list = await call('GET', '/api/v1/users?limit=50', { token });
   check('listUsers → 200 (Read: список)', list.status === 200 && Array.isArray(list.json?.items), `status=${list.status}`);

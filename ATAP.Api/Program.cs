@@ -1,18 +1,19 @@
-using System.Text;
 using ATAP.Api.Auth;
 using ATAP.Api.Infrastructure;
 using ATAP.BusinessLogic.Interfaces.Repositories;
-using ATAP.BusinessLogic.Interfaces.Services;
-using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;
-using ATAP.DataAccess.Factories;
-using ATAP.DataAccess.Interfaces;
 using ATAP.DataAccess.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.FileProviders;
+using ATAP.BusinessLogic.Domain;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,17 +24,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
     ?? "localhost:6379,abortConnect=false,connectTimeout=2000";
 
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
-var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 
 // ── Хранилище и кэш (те же слои, что у Blazor и ConsoleUI) ─────────────────────────────────
-var cacheSettings = new CacheSettings();
-builder.Configuration.GetSection("Cache").Bind(cacheSettings);
-builder.Services.AddSingleton(cacheSettings);
-
-var sqlFactory = new SqlQueryFactory();
-builder.Services.AddSingleton<ISqlQueryFactory>(sqlFactory);
-
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = redisConnectionString;
@@ -44,64 +36,74 @@ builder.Services.AddScoped<ICacheRepository>(sp => new ResilientCacheRepository(
     new RedisCacheRepository(sp.GetRequiredService<IDistributedCache>()),
     sp.GetRequiredService<ILogger<ResilientCacheRepository>>()));
 
-builder.Services.AddScoped<IUserRepository>(_ => new PostgresUserRepository(connectionString, sqlFactory));
-builder.Services.AddScoped<IAnalyticsRepository>(_ => new PostgresAnalyticsRepository(connectionString, sqlFactory));
-builder.Services.AddScoped<IMapRepository>(sp => new PostgresMapRepository(
-    connectionString, sqlFactory, sp.GetRequiredService<ICacheRepository>(), sp.GetRequiredService<CacheSettings>()));
-builder.Services.AddScoped<ISavedReportRepository>(_ => new PostgresSavedReportRepository(connectionString, sqlFactory));
-
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-builder.Services.AddScoped<IMapService, MapService>();
-builder.Services.AddScoped<ISavedReportService, SavedReportService>();
-
-// ── Аутентификация по JWT ──────────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPlatformRepository>(_ => new PostgresPlatformRepository(connectionString));
+builder.Services.AddScoped<PlatformService>();
+builder.Services.AddScoped<IExportRepository>(_ => new PostgresExportRepository(connectionString));
+builder.Services.AddScoped<ExportService>();
+builder.Services.AddHostedService<ExportWorker>();
+builder.Services.AddSingleton(TimeProvider.System);
+var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
+jwtOptions.Validate();
+builder.Services.AddSingleton(jwtOptions);
+builder.Services.AddSingleton<JwtSessionStore>();
 builder.Services.AddSingleton<JwtTokenService>();
-builder.Services.AddSingleton<RevokedTokenStore>();
 
+// Signed JWTs with server-side session revocation for immediate logout.
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.MapInboundClaims = false;
+        options.IncludeErrorDetails = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidIssuer = jwt.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwt.Issuer,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
+            RequireSignedTokens = true,
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+            RequireExpirationTime = true,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(5),
-            RoleClaimType = "role",
-            NameClaimType = "name"
+            ClockSkew = TimeSpan.Zero,
+            NameClaimType = "name",
+            RoleClaimType = "role"
         };
         options.Events = new JwtBearerEvents
         {
-            // Выход из системы: отозванный токен больше не принимается
-            OnTokenValidated = context =>
+            OnTokenValidated = async context =>
             {
-                var jti = context.Principal?.FindFirst("jti")?.Value;
-                var store = context.HttpContext.RequestServices.GetRequiredService<RevokedTokenStore>();
-                if (jti is not null && store.IsRevoked(jti))
-                    context.Fail("Токен отозван");
-                return Task.CompletedTask;
+                var subject = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+                var sessions = context.HttpContext.RequestServices.GetRequiredService<JwtSessionStore>();
+                if (!int.TryParse(subject, out var userId) || jti is null || !sessions.IsActive(jti, userId))
+                { context.Fail("Session is inactive"); return; }
+                try
+                {
+                    var service = context.HttpContext.RequestServices.GetRequiredService<PlatformService>();
+                    var user = await service.UserAsync(userId, context.HttpContext.RequestAborted);
+                    // JWT role is a snapshot; current DB permissions take effect immediately.
+                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(
+                        [new Claim("sub", subject!), new Claim("jti", jti), new Claim("name", user.Username), new Claim("role", user.Role)],
+                        JwtBearerDefaults.AuthenticationScheme, "name", "role"));
+                }
+                catch (DomainException exception) when (exception.Error == DomainError.NotFound)
+                { sessions.Revoke(jti); context.Fail("User no longer exists"); }
             },
             OnChallenge = async context =>
             {
                 context.HandleResponse();
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.StatusCode = 401;
                 context.Response.Headers.WWWAuthenticate = "Bearer";
-                await context.Response.WriteAsJsonAsync(
-                    Problems.Create(401, "unauthorized", "Требуется вход в систему", context.Request.Path),
+                await context.Response.WriteAsJsonAsync(Problems.Create(401, "unauthorized", "Требуется вход в систему", context.Request.Path),
                     (System.Text.Json.JsonSerializerOptions?)null, Problems.ContentType);
             },
             OnForbidden = async context =>
             {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await context.Response.WriteAsJsonAsync(
-                    Problems.Create(403, "forbidden", "Недостаточно прав", context.Request.Path),
+                context.Response.StatusCode = 403;
+                await context.Response.WriteAsJsonAsync(Problems.Create(403, "forbidden", "Недостаточно прав", context.Request.Path),
                     (System.Text.Json.JsonSerializerOptions?)null, Problems.ContentType);
             }
         };
@@ -131,11 +133,30 @@ var app = builder.Build();
 // Необработанные исключения — тоже Problem Details, без подробностей наружу
 app.UseExceptionHandler(handler => handler.Run(async context =>
 {
-    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var status = exception is DomainException domain ? domain.Error switch
+    {
+        DomainError.Invalid => 400, DomainError.NotFound => 404, DomainError.Forbidden => 403,
+        DomainError.Conflict => 409, DomainError.Unavailable => 503, _ => 500
+    } : exception is Npgsql.NpgsqlException ? 503 : 500;
+    context.Response.StatusCode = status;
+    var slug = exception is DomainException d ? d.Code : status == 503 ? "service-unavailable" : "internal-error";
+    var title = exception is DomainException known ? known.Message : status == 503 ? "Хранилище временно недоступно" : "Внутренняя ошибка сервера";
     await context.Response.WriteAsJsonAsync(
-        Problems.Create(500, "internal-error", "Внутренняя ошибка сервера", context.Request.Path),
+        Problems.Create(status, slug, title, context.Request.Path),
         (System.Text.Json.JsonSerializerOptions?)null, Problems.ContentType);
 }));
+
+// MVC can reject a Content-Type before the action executes. Keep those errors in the contract format too.
+app.UseStatusCodePages(async statusContext =>
+{
+    var context = statusContext.HttpContext;
+    var status = context.Response.StatusCode;
+    await context.Response.WriteAsJsonAsync(
+        Problems.Create(status, status == 415 ? "unsupported-media-type" : "http-error",
+            status == 415 ? "Неподдерживаемый формат тела запроса" : "Запрос не выполнен", context.Request.Path),
+        (System.Text.Json.JsonSerializerOptions?)null, Problems.ContentType);
+});
 
 // ── Swagger UI на согласованной спецификации (web_lr2/openapi.yaml, источник истины) ───────
 var openApiDirectory = Path.Combine(AppContext.BaseDirectory, "openapi");

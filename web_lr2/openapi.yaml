@@ -2,45 +2,47 @@ openapi: 3.1.0
 
 info:
   title: ATAP API
-  version: 1.2.0
+  version: 1.0.0
   summary: Публичный REST API платформы аналитики воздушного движения ATAP
   description: |
-    Внешний REST API системы ATAP (Air Traffic Analytics Platform). Даёт доступ ко всем данным
-    системы — воздушным судам, рейсам и их трекам, аэропортам, витрине загруженности, сохранённым
-    отчётам и пользователям — для внешних интеграций и клиентского SPA.
+    REST API системы ATAP для внешних интеграций и клиентского SPA. Позволяет получать данные
+    о воздушных судах, рейсах, треках и аэропортах, просматривать аналитику загруженности,
+    сохранять отчёты и управлять пользователями. Доступ зависит от роли пользователя.
 
-    Контракт построен по материалам WebLab#1 (`README.md`): требования FR-01…FR-16,
-    пользовательские сценарии 1–4, ER-диаграмма (§7), DDL `db/create_tables.sql`, экраны и связи
-    сценариев (§11, §13).
+    **Вход и выход.** `POST /api/v1/login` при верных логине и пароле возвращает подписанный JWT.
+    Для защищённых операций токен передаётся в заголовке `Authorization: Bearer <token>`.
+    `POST /api/v1/logout` выполняет выход: токен этого запроса больше не принимается.
+    Данные вошедшего пользователя возвращаются вместе с токеном при входе. Токен действует один час.
 
-    **Версионирование.** Мажорная версия — в пути: `/api/v1/…`.
+    **Роли.** `guest` — посетитель без входа; отдельная учётная запись для него не создаётся.
+    Роль вошедшего пользователя — `analyst` или `admin`.
+    Администратору доступны функции аналитика и управление пользователями.
 
-    **Аутентификация.** Сессия — ресурс `/api/v1/sessions`: `POST` создаёт сессию (вход) и
-    возвращает JWT, `DELETE /api/v1/sessions/current` завершает её (выход). Токен передаётся в
-    заголовке `Authorization: Bearer <token>`.
+    **Форматы.** Данные возвращаются в `application/json`, аналитика также доступна в `text/csv`.
+    Формат ответа выбирается заголовком `Accept`. Для частичного обновления используется
+    `PATCH` с JSON Merge Patch (`application/merge-patch+json`).
+    Ошибки возвращаются в формате Problem Details (`application/problem+json`).
 
-    **Роли.** `guest` — запрос без токена; `analyst` и `admin` — из токена. Администратор имеет все
-    права аналитика. Допустимые роли каждой операции — в расширении `x-roles`.
+    **Пагинация.** `limit` задаёт размер страницы, `offset` — сколько записей пропустить.
+    Ответ содержит `items` (записи страницы), `total` (всего записей по фильтру), `limit` и `offset`.
+    В аналитике также возвращаются параметры периода и сводка. Текущие позиции рейсов
+    и CSV-выгрузка аналитики возвращаются без пагинации.
 
-    **Форматы.** Ресурсы отдаются в `application/json`. Данные витрины дополнительно доступны в
-    `text/csv` — формат выбирается заголовком `Accept` (согласование содержимого). Частичное
-    обновление — `PATCH` в формате JSON Merge Patch (`application/merge-patch+json`, RFC 7396).
-    Ошибки — Problem Details (`application/problem+json`, RFC 9457).
+    **Даты.** Период аналитики задаётся полями `dateFrom` и `dateTo` в формате `YYYY-MM-DD`.
+    Обе даты включаются целиком: одинаковые даты означают один день. Период — не больше
+    31 календарного дня, включая обе даты; `dateFrom` не позже `dateTo`.
+    Эти же поля и правила используются в сохранённых отчётах.
 
-    **Пагинация.** Коллекции — параметрами `limit` и `offset`; ответ — объект
-    `{items, total, limit, offset}`.
-
-    **Даты.** Период задаётся датами `dateFrom` и `dateTo` (`YYYY-MM-DD`), обе границы включаются. Период
-    не больше 31 дня; `dateFrom` не позже `dateTo`. Те же имена полей — у сохранённого отчёта.
-  contact:
-    name: ATAP
-  license:
-    name: Учебный проект
-    identifier: CC-BY-4.0
+    **Асинхронная выгрузка.** `POST /api/v1/exports` принимает параметры аналитики и возвращает
+    `202` с заголовками `Location` и `Retry-After`. Клиент проверяет состояние через GET по Location.
+    После состояния `completed` CSV доступен по `downloadUrl`. Доступ к заданию есть только у владельца.
+    Состояния: `queued` — в очереди, `running` — формируется, `completed` — файл готов,
+    `failed` — формирование завершилось ошибкой. Проверка состояния возвращает `200`;
+    готовность определяется полем `status`, а не самим кодом HTTP.
 
 servers:
-  - url: http://localhost:5080
-    description: Локальная разработка (проект ATAP.Api, `make run-api`)
+  - url: /
+    description: Сервер, с которого открыта спецификация (локально — `make run-api`, порт 5080)
 
 tags:
   - name: sessions
@@ -57,18 +59,20 @@ tags:
     description: Витрина загруженности аэропортов (FR-07…FR-10)
   - name: reports
     description: Сохранённые отчёты пользователя (FR-11, FR-12)
+  - name: exports
+    description: Фоновые задания выгрузки аналитики в CSV
 
 paths:
 
   # ─────────────────────────────── sessions ───────────────────────────────
 
-  /api/v1/sessions:
+  /api/v1/login:
     post:
       tags: [sessions]
-      operationId: createSession
+      operationId: login
       summary: Войти (создать сессию)
       description: |
-        Проверяет логин и пароль, создаёт сессию и возвращает токен доступа. При неизвестном логине
+        Проверяет логин и пароль и возвращает подписанный JWT. При неизвестном логине
         и при неверном пароле ответ одинаковый — чтобы не раскрывать, что именно неверно.
         FR-02, сценарий 2.
       x-roles: [guest]
@@ -85,15 +89,12 @@ paths:
       responses:
         '201':
           description: Сессия создана
-          headers:
-            Location:
-              $ref: '#/components/headers/Location'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Session'
               example:
-                accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Iiwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJl
+                accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Iiwicm9sZSI6ImFkbWluIiwianRpIjoiZXhhbXBsZSJ9.c2lnbmF0dXJl'
                 tokenType: Bearer
                 expiresIn: 3600
                 user:
@@ -119,37 +120,14 @@ paths:
                 type: https://atap.example/problems/invalid-credentials
                 title: Неверный логин или пароль
                 status: 401
-                instance: /api/v1/sessions
+                instance: /api/v1/login
         '415':
           $ref: '#/components/responses/UnsupportedMediaType'
 
-  /api/v1/sessions/current:
-    get:
+  /api/v1/logout:
+    post:
       tags: [sessions]
-      operationId: getCurrentSession
-      summary: Текущая сессия
-      description: Пользователь, которому принадлежит токен. Нужен SPA, чтобы восстановить состояние после перезагрузки страницы.
-      x-roles: [analyst, admin]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Текущий пользователь
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-              example:
-                id: 8
-                username: admin1
-                email: admin1@atap.com
-                role: admin
-                createdAt: '2026-06-10T08:00:00Z'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    delete:
-      tags: [sessions]
-      operationId: deleteCurrentSession
+      operationId: logout
       summary: Выйти (завершить сессию)
       description: Завершает сессию; токен больше не принимается. Повторный вызов с тем же токеном вернёт `401`. FR-03, сценарий 2.
       x-roles: [analyst, admin]
@@ -553,14 +531,14 @@ paths:
         - name: seenFrom
           in: query
           required: false
-          description: Рейс наблюдался не раньше этого момента
+          description: firstSeen рейса не раньше этого момента (включительно)
           schema:
             type: string
             format: date-time
         - name: seenTo
           in: query
           required: false
-          description: Рейс наблюдался не позже этого момента
+          description: lastSeen рейса не позже этого момента (включительно)
           schema:
             type: string
             format: date-time
@@ -1079,6 +1057,118 @@ paths:
         '406':
           $ref: '#/components/responses/NotAcceptable'
 
+  /api/v1/exports:
+    post:
+      tags: [exports]
+      operationId: createExport
+      summary: Поставить выгрузку CSV в очередь
+      description: Проверяет параметры и создаёт задание. Состояние проверяется по Location; повторный POST создаёт новое задание.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportCreate'
+            example: {airportId: 1, dateFrom: '2026-06-10', dateTo: '2026-06-10'}
+      responses:
+        '202':
+          description: Задание принято; это ещё не подтверждение готовности файла
+          headers:
+            Location:
+              description: Адрес проверки состояния задания
+              schema: {type: string, format: uri-reference}
+              example: /api/v1/exports/b98bacdb-b682-4601-926b-e0706b9638c2
+            Retry-After:
+              description: Рекомендуемая пауза перед следующей проверкой, в секундах
+              schema: {type: integer, minimum: 1}
+              example: 1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+              example:
+                id: 'b98bacdb-b682-4601-926b-e0706b9638c2'
+                status: queued
+                airportId: 1
+                dateFrom: '2026-06-10'
+                dateTo: '2026-06-10'
+                createdAt: '2026-06-10T10:00:00Z'
+                downloadUrl: null
+                error: null
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+  /api/v1/exports/{exportId}:
+    get:
+      tags: [exports]
+      operationId: getExport
+      summary: Узнать состояние задания
+      description: Возвращает queued, running, completed или failed. Чужое задание возвращает 404. Для незавершённого задания рекомендуется повтор через Retry-After.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Состояние задания
+          headers:
+            Retry-After:
+              description: Для queued и running — рекомендуемая пауза перед следующей проверкой, в секундах
+              schema: {type: integer, minimum: 1}
+              example: 1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/exports/{exportId}/file:
+    get:
+      tags: [exports]
+      operationId: downloadExport
+      summary: Скачать готовую выгрузку
+      description: Возвращает CSV после completed; до готовности или после ошибки задания — 409. Чужой файл возвращает 404.
+      x-roles: [analyst, admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Готовый файл
+          content:
+            text/csv:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Файл не готов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+
 components:
 
   securitySchemes:
@@ -1086,7 +1176,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Токен из `createSession`; содержит идентификатор пользователя и роль.
+      description: Подписанный HS256 JWT из login. Сервер проверяет подпись, издателя, получателя, срок и активность сессии. Актуальная роль пользователя читается из БД.
 
   headers:
     Location:
@@ -1096,6 +1186,12 @@ components:
         format: uri-reference
 
   parameters:
+    ExportId:
+      name: exportId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+      example: 'b98bacdb-b682-4601-926b-e0706b9638c2'
     Limit:
       name: limit
       in: query
@@ -1128,7 +1224,7 @@ components:
       name: dateTo
       in: query
       required: true
-      description: Дата окончания периода (включительно); не раньше `dateFrom` и не дальше 31 дня от неё
+      description: Дата окончания периода (включительно); не раньше `dateFrom`. Период включает обе даты и не превышает 31 календарный день.
       schema:
         type: string
         format: date
@@ -1201,7 +1297,7 @@ components:
                 callsign: DLH8PJ
                 entryTime: '2026-06-10T07:06:00Z'
                 exitTime: '2026-06-10T07:08:00Z'
-                durationSeconds: 96
+                durationSeconds: 120
                 isDeparture: false
                 isArrival: true
                 maxAltitudeInZone: 540
@@ -1215,7 +1311,7 @@ components:
             description: Строка заголовка и по строке на запись; колонки — поля `CongestionEntry` в том же порядке
           example: |
             id,airportId,flightId,callsign,entryTime,exitTime,durationSeconds,isDeparture,isArrival,maxAltitudeInZone,minAltitudeInZone
-            1893307,4,6254,DLH8PJ,2026-06-10T07:06:00Z,2026-06-10T07:08:00Z,96,false,true,540,310
+            1893307,4,6254,DLH8PJ,2026-06-10T07:06:00Z,2026-06-10T07:08:00Z,120,false,true,540,310
     ValidationError:
       description: Некорректные данные запроса
       content:
@@ -1389,6 +1485,49 @@ components:
             status: 415
 
   schemas:
+    ExportCreate:
+      type: object
+      additionalProperties: false
+      required: [dateFrom, dateTo]
+      properties:
+        airportId: {type: [integer, 'null'], minimum: 1}
+        dateFrom: {type: string, format: date}
+        dateTo: {type: string, format: date}
+      description: Период включает обе даты и не превышает 31 календарный день. Без airportId — все аэропорты.
+    Export:
+      type: object
+      description: |
+        Задание формирования CSV. queued — в очереди, running — выполняется,
+        completed — завершено успешно, failed — завершено с ошибкой.
+        downloadUrl заполнен только при completed; error — только при failed.
+        completed и failed — конечные состояния. Доступ разрешён только владельцу.
+      required: [id, status, dateFrom, dateTo, createdAt, downloadUrl, error]
+      properties:
+        id: {type: string, format: uuid}
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+          description: Состояние формирования файла; не код ответа HTTP
+        airportId: {type: [integer, 'null']}
+        dateFrom: {type: string, format: date}
+        dateTo: {type: string, format: date}
+        createdAt: {type: string, format: date-time}
+        downloadUrl:
+          type: [string, 'null']
+          format: uri-reference
+          description: Защищённый адрес скачивания; запрос требует того же Bearer-токена
+        error:
+          type: [string, 'null']
+          description: Безопасное для пользователя описание ошибки формирования
+      example:
+        id: 'b98bacdb-b682-4601-926b-e0706b9638c2'
+        status: completed
+        airportId: 1
+        dateFrom: '2026-06-10'
+        dateTo: '2026-06-10'
+        createdAt: '2026-06-10T10:00:00Z'
+        downloadUrl: /api/v1/exports/b98bacdb-b682-4601-926b-e0706b9638c2/file
+        error: null
 
     # ── общие ──
 
@@ -1571,7 +1710,7 @@ components:
       properties:
         accessToken:
           type: string
-          description: JWT-токен доступа
+          description: Подписанный JWT; клиент передаёт его целиком в Authorization Bearer
         tokenType:
           type: string
           const: Bearer

@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ATAP.BusinessLogic\ATAP.BusinessLogic.csproj" />
-    <ProjectReference Include="..\ATAP.DataAccess\ATAP.DataAccess.csproj" />
+    <ProjectReference Include="..\ATAP.ApiClient\ATAP.ApiClient.csproj" />
   </ItemGroup>
 
   <ItemGroup>

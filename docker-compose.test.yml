@@ -57,7 +57,7 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: "Host=postgres-test;Port=5432;Database=atap_e2e;Username=postgres;Password=test_pass"
       ConnectionStrings__Redis: "redis-test:6379,abortConnect=false,connectTimeout=2000"
-      Jwt__Key: "e2e-signing-key-0123456789abcdefghijklmnopqrstuvwxyz"
+      Jwt__Key: "atap-test-only-signing-key-0123456789abcdefghijklmnopqrstuvwxyz"
     depends_on:
       db-e2e:
         condition: service_completed_successfully

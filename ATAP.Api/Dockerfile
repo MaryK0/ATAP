@@ -18,7 +18,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app .
 
-# Адрес и подключения задаются переменными окружения (ConnectionStrings__DefaultConnection, Jwt__Key, ...)
+# Адрес и подключения задаются переменными окружения (ConnectionStrings__DefaultConnection, ...)
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "ATAP.Api.dll"]

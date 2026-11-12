@@ -28,3 +28,9 @@ docs/use-case-demo.html
 docs/use-case-coverage.md
 docs/demo-usecases.md
 docs/lr2-overview.md
+
+# Contract test dependencies
+node_modules/
+
+# CSV files downloaded through the console UI
+congestion_airport*.csv

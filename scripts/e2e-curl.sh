@@ -37,8 +37,8 @@ call 304 GET  "/api/v1/flights/current" -H "If-None-Match: $ETAG"
 call 401 GET  "/api/v1/congestion?$PERIOD"
 
 # Вход
-call 401 POST "/api/v1/sessions" -H 'Content-Type: application/json' -d "{\"username\":\"$USER_NAME\",\"password\":\"wrong-password\"}"
-call 201 POST "/api/v1/sessions" -H 'Content-Type: application/json' -d "{\"username\":\"$USER_NAME\",\"password\":\"$PASSWORD\"}"
+call 401 POST "/api/v1/login" -H 'Content-Type: application/json' -d "{\"username\":\"$USER_NAME\",\"password\":\"wrong-password\"}"
+call 201 POST "/api/v1/login" -H 'Content-Type: application/json' -d "{\"username\":\"$USER_NAME\",\"password\":\"$PASSWORD\"}"
 TOKEN="$(json accessToken)"
 [ -n "$TOKEN" ] || { echo "Токен не получен"; exit 1; }
 
@@ -56,7 +56,7 @@ call 204 DELETE "/api/v1/reports/$REPORT_ID"
 call 404 GET    "/api/v1/reports/$REPORT_ID"
 
 # Выход: токен больше не принимается
-call 204 DELETE "/api/v1/sessions/current"
+call 204 POST "/api/v1/logout"
 call 401 GET    "/api/v1/reports"
 
 echo "Сценарий выполнен: $STEP запросов, все коды совпали с ожидаемыми."
