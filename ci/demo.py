@@ -56,7 +56,8 @@ while time.monotonic() < deadline:
     time.sleep(5)
 else:
     raise SystemExit('Build timeout: Jenkins continues running; check its UI')
-(out / 'console.log').write_bytes(get(f'/job/atap-tests/{number}/consoleText'))
+console = get(f'/job/atap-tests/{number}/consoleText')
+(out / 'console.log').write_bytes(console)
 report = f'/job/atap-tests/{number}/artifact/ci-results/allure-report/'
 for filename in ['summary.json', 'history-trend.json']:
     try:
@@ -66,4 +67,8 @@ for filename in ['summary.json', 'history-trend.json']:
 (out / 'build.json').write_text(json.dumps(info, indent=2), encoding='utf-8')
 print(f"Result: {info['result']}; evidence: {out}; Allure: {base}{report}index.html", flush=True)
 expected = 'FAILURE' if args.expect_failure else 'SUCCESS'
+if args.expect_failure and args.fault != 'none':
+    service = 'postgres-test' if args.fault == 'postgres' else 'atap-api'
+    assert ('stopping=' + service).encode() in console, 'Build failed before the requested fault'
+    assert (out / 'summary.json').exists(), 'No Allure report after failure'
 raise SystemExit(0 if info['result'] == expected else 1)

@@ -1,3 +1,5 @@
+> Historical audit (06.11.2026). Current demonstration commands: [lr2-demo.md](lr2-demo.md). Fresh Jenkins evidence is saved under `TestResults/lr2/`.
+
 # Проверка ЛР №2 по тестированию — 06.11.2026
 
 Основание: PDF «ТИОПО, ЛР №2.pdf» пользователя (2 страницы),

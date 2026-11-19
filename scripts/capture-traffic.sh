@@ -17,12 +17,13 @@ cleanup() {
 }
 trap cleanup EXIT
 if [ "${ATAP_CAPTURE_EXISTING:-0}" != 1 ]; then
+  export ATAP_TEST_PROJECT="${ATAP_TEST_PROJECT:-atap-traffic-$(date +%s)-$$}"
   eval "$(bash scripts/test-stand.sh up)"
 fi
 NETWORK="${ATAP_TEST_PROJECT:?}_default"
 output_args=(--mount "type=bind,source=${OUT_HOST},target=/out")
 if [ -n "${ATAP_TRAFFIC_VOLUME:-}" ]; then output_args=(-v "${ATAP_TRAFFIC_VOLUME}:/out"); fi
-docker create --name "$MITM_NAME" --network "$NETWORK" -p 127.0.0.1::8888 \
+docker create --name "$MITM_NAME" --user 0 --network "$NETWORK" -p 127.0.0.1::8888 \
   "${output_args[@]}" "$MITM_IMAGE" mitmdump \
   --mode reverse:http://atap-api:8080 --listen-host 0.0.0.0 --listen-port 8888 \
   --set flow_detail=0 -s /tmp/traffic-addon.py >/dev/null
