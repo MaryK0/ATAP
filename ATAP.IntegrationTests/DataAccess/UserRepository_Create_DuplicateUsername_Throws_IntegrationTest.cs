@@ -1,3 +1,5 @@
+// Интеграционный тест: PostgreSQL отклоняет повторный логин без добавления пользователя.
+
 using ATAP.BusinessLogic.Interfaces.Repositories;
 using ATAP.IntegrationTests.Infrastructure;
 using Npgsql;

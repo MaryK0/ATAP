@@ -1,3 +1,5 @@
+// Интеграционный тест: аэропорт без записей аналитики в PostgreSQL возвращает пустой список.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

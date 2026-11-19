@@ -41,4 +41,17 @@ run_tests_container() {
 export_results() {
   rm -rf ci-results && mkdir -p ci-results
   docker run --rm -v "${RESULTS_VOL}:/src:ro" --entrypoint tar "$IMAGE" -C /src -cf - . | tar -C ci-results -xf -
+  if [ -d ci-results/developers ]; then
+    mkdir -p ci-results/allure-results ci-results/status
+    for stage in integration e2e; do
+      local code=0 developer
+      for developer in dev-{1..5}; do
+        [ "$(cat "ci-results/developers/$developer/status/$stage" 2>/dev/null)" = 0 ] || code=1
+      done
+      echo "$code" > "ci-results/status/$stage"
+    done
+    for dir in ci-results/developers/*/allure-results; do
+      [ ! -d "$dir" ] || cp -r "$dir"/. ci-results/allure-results/
+    done
+  fi
 }

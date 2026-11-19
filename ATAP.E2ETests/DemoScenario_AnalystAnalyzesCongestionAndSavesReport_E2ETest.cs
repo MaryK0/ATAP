@@ -1,3 +1,5 @@
+// E2E-тест реального API на стенде PostgreSQL + Redis: карта гостя, вход, аналитика JSON/CSV, сохранение и удаление отчёта, выход; без GUI.
+
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;

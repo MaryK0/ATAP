@@ -15,6 +15,11 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
 
+    parameters {
+        choice(name: 'FAULT_TARGET', choices: ['none', 'postgres', 'api'], description: 'Остановить компонент только тестового стенда перед соответствующим этапом')
+        booleanParam(name: 'PARALLEL_DEMO', defaultValue: false, description: 'Пять независимых разработчиков: integration и E2E параллельно')
+    }
+
     stages {
         stage('Образ с тестами') {
             steps { sh 'bash ci/prepare.sh' }
@@ -29,11 +34,34 @@ pipeline {
         }
 
         stage('Integration') {
-            steps { sh 'bash ci/stage-run.sh integration' }
+            when { expression { !params.PARALLEL_DEMO } }
+            steps {
+                sh 'bash ci/fault.sh integration'
+                sh 'bash ci/stage-run.sh integration'
+            }
         }
 
         stage('E2E') {
-            steps { sh 'bash ci/stage-run.sh e2e' }
+            when { expression { !params.PARALLEL_DEMO } }
+            steps {
+                sh 'bash ci/fault.sh e2e'
+                sh 'bash ci/stage-run.sh e2e'
+            }
+        }
+
+        stage('Пять разработчиков') {
+            when { expression { params.PARALLEL_DEMO } }
+            steps {
+                script {
+                    if (params.FAULT_TARGET != 'none') error('Параллельный показ и остановку компонентов запускайте отдельно')
+                    def developers = [:]
+                    for (int i = 1; i <= 5; i++) {
+                        def developer = "dev-${i}"
+                        developers[developer] = { sh "bash ci/parallel-run.sh ${developer}" }
+                    }
+                    parallel developers
+                }
+            }
         }
     }
 

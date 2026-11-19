@@ -1,3 +1,5 @@
+// Интеграционный тест: аналитика из PostgreSQL включает начало периода и исключает правую границу и внешние записи.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

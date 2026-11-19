@@ -1,3 +1,5 @@
+// Интеграционный тест: администратор из PostgreSQL читается с правильными полями.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

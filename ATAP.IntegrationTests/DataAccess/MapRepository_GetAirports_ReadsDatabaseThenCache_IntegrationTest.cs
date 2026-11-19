@@ -1,3 +1,5 @@
+// Интеграционный тест: первое чтение аэропортов из PostgreSQL заполняет Redis, повторное использует кэш после изменения БД.
+
 using ATAP.BusinessLogic.Interfaces.Repositories;
 using ATAP.DataAccess;
 using ATAP.DataAccess.Factories;

@@ -1,3 +1,5 @@
+// Интеграционный тест: удаление неизвестного пользователя возвращает false и не меняет данные PostgreSQL.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

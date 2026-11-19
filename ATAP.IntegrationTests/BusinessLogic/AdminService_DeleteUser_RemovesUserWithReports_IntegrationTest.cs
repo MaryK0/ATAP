@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис удаляет пользователя и его отчёты из PostgreSQL, сохраняя администратора.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

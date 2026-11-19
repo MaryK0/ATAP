@@ -1,3 +1,5 @@
+// Интеграционный тест: удаление ключа из настоящего Redis делает значение недоступным.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

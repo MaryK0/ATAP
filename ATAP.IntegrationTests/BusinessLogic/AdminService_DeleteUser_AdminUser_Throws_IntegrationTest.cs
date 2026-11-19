@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL запрещает удаление администратора, сохраняя пользователей и отчёты.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

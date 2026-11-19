@@ -1,3 +1,5 @@
+// Интеграционный тест: изменение роли и email сохраняется в PostgreSQL.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

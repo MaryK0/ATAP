@@ -1,3 +1,5 @@
+// Интеграционный тест: удаление пользователя в PostgreSQL каскадно удаляет его отчёты.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

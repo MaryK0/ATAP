@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis возвращает ожидаемые записи, период и число вылетов и прилётов.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

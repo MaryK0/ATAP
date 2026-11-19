@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL отклоняет неверный пароль и неизвестный логин, не устанавливая текущего пользователя.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

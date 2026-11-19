@@ -1,3 +1,5 @@
+// Интеграционный тест: созданный в PostgreSQL пользователь находится по логину и email с сохранёнными полями.
+
 using ATAP.BusinessLogic.Interfaces.Repositories;
 using ATAP.IntegrationTests.Infrastructure;
 

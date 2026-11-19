@@ -1,3 +1,5 @@
+// Интеграционный тест: поиск неизвестного пользователя в PostgreSQL возвращает null.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

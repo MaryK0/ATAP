@@ -1,3 +1,5 @@
+// Интеграционный тест: фильтр аэропорта возвращает из PostgreSQL только его записи аналитики.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

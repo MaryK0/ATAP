@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис сохраняет отчёт в PostgreSQL, возвращает его владельцу и удаляет по его запросу.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;

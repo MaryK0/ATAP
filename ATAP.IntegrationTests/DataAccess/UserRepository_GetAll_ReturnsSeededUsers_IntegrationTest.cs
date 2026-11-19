@@ -1,3 +1,5 @@
+// Интеграционный тест: список из PostgreSQL содержит тестовых пользователей в порядке ID.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

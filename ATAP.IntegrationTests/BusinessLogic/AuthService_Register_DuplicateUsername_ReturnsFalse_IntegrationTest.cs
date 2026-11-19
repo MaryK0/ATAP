@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL отклоняет занятые логин и email без добавления пользователя.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

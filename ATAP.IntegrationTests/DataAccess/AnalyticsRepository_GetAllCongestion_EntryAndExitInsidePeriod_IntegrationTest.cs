@@ -1,3 +1,5 @@
+// Интеграционный тест: общая аналитика из PostgreSQL включает записи разных аэропортов, целиком лежащие в периоде.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

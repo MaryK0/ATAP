@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis одновременно применяет фильтры области, высоты и страны.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;

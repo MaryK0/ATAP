@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis оставляет только рейсы внутри видимой области.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;

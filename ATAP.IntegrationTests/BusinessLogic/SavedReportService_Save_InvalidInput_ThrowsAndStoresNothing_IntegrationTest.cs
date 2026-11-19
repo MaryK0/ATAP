@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис отклоняет пустое название и перевёрнутый период без сохранения отчёта в PostgreSQL.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;

@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL после входа очищает текущего пользователя при выходе.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

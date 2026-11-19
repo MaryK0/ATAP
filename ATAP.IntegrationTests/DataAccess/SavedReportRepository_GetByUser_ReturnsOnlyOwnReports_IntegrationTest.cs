@@ -1,3 +1,5 @@
+// Интеграционный тест: из PostgreSQL возвращаются только отчёты владельца с параметрами и названием аэропорта.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

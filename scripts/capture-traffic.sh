@@ -1,54 +1,50 @@
 #!/usr/bin/env bash
-# Захват трафика E2E-сценария (WebLab «Тестирование», п. 5).
-#   scripts/capture-traffic.sh
-#
-# Что делает:
-#   1. поднимает тестовый стенд (PostgreSQL, Redis, API);
-#   2. запускает mitmproxy в режиме обратного прокси перед API (контейнер в сети стенда);
-#   3. выполняет сценарий scripts/e2e-curl.sh через прокси — все запросы и ответы проходят через mitmproxy;
-#   4. сохраняет подробный журнал (docs/traffic/e2e-traffic.log) и дамп потоков mitmproxy (docs/traffic/e2e.flow);
-#   5. удаляет прокси и стенд — всегда, в том числе при ошибке.
+# E2E curl -> mitmproxy -> реальный API. Сохраняются копии без паролей/JWT.
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-OUT="$ROOT/docs/traffic"
-OUT_HOST="$(cd "$OUT" 2>/dev/null && (pwd -W 2>/dev/null || pwd) || true)"
+OUT="${ATAP_TRAFFIC_OUT:-$ROOT/TestResults/lr2/traffic}"
 mkdir -p "$OUT"
 OUT_HOST="$(cd "$OUT" && (pwd -W 2>/dev/null || pwd))"
-# Git Bash на Windows иначе преобразует пути вида /out в Windows-пути; отключаем это только для docker
 docker() { MSYS_NO_PATHCONV=1 command docker "$@"; }
-
-MITM_IMAGE="mitmproxy/mitmproxy:10.4.2"
-MITM_NAME="atap-mitm-$$"
-
-eval "$(bash scripts/test-stand.sh up)"
+MITM_IMAGE=mitmproxy/mitmproxy:10.4.2
+MITM_NAME="atap-mitm-${ATAP_DEVELOPER:-local}-$$"
 cleanup() {
   docker rm -f "$MITM_NAME" >/dev/null 2>&1 || true
-  bash scripts/test-stand.sh down || true
+  if [ "${ATAP_CAPTURE_EXISTING:-0}" != 1 ] && [ -n "${ATAP_TEST_PROJECT:-}" ]; then
+    bash scripts/test-stand.sh down || true
+  fi
 }
 trap cleanup EXIT
-
-NETWORK="${ATAP_TEST_PROJECT}_default"
-rm -f "$OUT/e2e.flow" "$OUT/e2e-traffic.log"
-
-docker run -d --name "$MITM_NAME" --network "$NETWORK" -p 127.0.0.1::8888 \
-  --mount "type=bind,source=${OUT_HOST},target=/out" \
-  "$MITM_IMAGE" mitmdump --mode reverse:http://atap-api:8080 --listen-host 0.0.0.0 --listen-port 8888 \
-  --set flow_detail=3 -w /out/e2e.flow >/dev/null
-
+if [ "${ATAP_CAPTURE_EXISTING:-0}" != 1 ]; then
+  eval "$(bash scripts/test-stand.sh up)"
+fi
+NETWORK="${ATAP_TEST_PROJECT:?}_default"
+output_args=(--mount "type=bind,source=${OUT_HOST},target=/out")
+if [ -n "${ATAP_TRAFFIC_VOLUME:-}" ]; then output_args=(-v "${ATAP_TRAFFIC_VOLUME}:/out"); fi
+docker create --name "$MITM_NAME" --network "$NETWORK" -p 127.0.0.1::8888 \
+  "${output_args[@]}" "$MITM_IMAGE" mitmdump \
+  --mode reverse:http://atap-api:8080 --listen-host 0.0.0.0 --listen-port 8888 \
+  --set flow_detail=0 -s /tmp/traffic-addon.py >/dev/null
+docker cp scripts/traffic-addon.py "$MITM_NAME:/tmp/traffic-addon.py"
+docker start "$MITM_NAME" >/dev/null
 PROXY_PORT="$(docker port "$MITM_NAME" 8888/tcp | head -1 | sed 's/.*://')"
-PROXY="http://127.0.0.1:${PROXY_PORT}"
-for _ in $(seq 1 30); do
-  curl -s -o /dev/null "$PROXY/api/v1/airports" && break
-  sleep 1
-done
-
-echo "Прокси mitmproxy: $PROXY  →  API в сети стенда" >&2
-bash scripts/e2e-curl.sh "$PROXY"
-
-sleep 1
-docker logs "$MITM_NAME" > "$OUT/e2e-traffic.log" 2>&1
+PROXY="http://${ATAP_DOCKER_HOST:-127.0.0.1}:${PROXY_PORT}"
+# Для Jenkins запрос делается контейнером в сети стенда: порт опубликован только на loopback хоста.
+if [ "${ATAP_CAPTURE_IN_CONTAINER:-0}" = 1 ]; then
+  docker run --rm --network "$NETWORK" --entrypoint bash \
+    -e "ATAP_DEVELOPER=${ATAP_DEVELOPER:-local}" \
+    -v "${WORK_VOL:?}:/work:ro" "${IMAGE:?}" \
+    -c 'for i in {1..30}; do curl -fs -o /dev/null "$1/api/v1/airports" && break; sleep 1; done; bash /work/src/scripts/e2e-curl.sh "$1"' -- "http://$MITM_NAME:8888"
+else
+  ready=0
+  for _ in $(seq 1 30); do
+    if curl -fs -o /dev/null "$PROXY/api/v1/airports"; then ready=1; break; fi
+    sleep 1
+  done
+  [ "$ready" = 1 ] || { docker logs "$MITM_NAME" >&2; exit 1; }
+  echo "[traffic] developer=${ATAP_DEVELOPER:-local} project=$ATAP_TEST_PROJECT proxy=$PROXY" >&2
+  bash scripts/e2e-curl.sh "$PROXY"
+fi
 docker stop "$MITM_NAME" >/dev/null
-echo "Журнал трафика: docs/traffic/e2e-traffic.log ($(wc -l < "$OUT/e2e-traffic.log") строк)" >&2
-echo "Дамп потоков:   docs/traffic/e2e.flow (открывается: mitmproxy -r docs/traffic/e2e.flow)" >&2
+echo "Traffic capture: ${ATAP_TRAFFIC_VOLUME:-$OUT}/e2e-traffic.log and e2e.flow (credentials redacted)" >&2

@@ -1,3 +1,5 @@
+// Интеграционный тест: значение восстанавливается из настоящего Redis, отсутствующий ключ возвращает null.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

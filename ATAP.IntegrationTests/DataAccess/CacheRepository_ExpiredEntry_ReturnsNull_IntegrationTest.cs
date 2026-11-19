@@ -1,3 +1,5 @@
+// Интеграционный тест: после истечения TTL настоящий Redis больше не возвращает значение.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

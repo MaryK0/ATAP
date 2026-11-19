@@ -1,3 +1,5 @@
+// Интеграционный тест: повторный запрос сервиса возвращает аналитику из Redis даже после удаления записей из PostgreSQL.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

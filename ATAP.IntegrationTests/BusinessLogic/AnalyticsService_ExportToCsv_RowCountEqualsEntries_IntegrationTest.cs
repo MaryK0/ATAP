@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis формирует CSV с заголовком, строкой на запись и ожидаемыми значениями.
+
 using System.Text;
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;

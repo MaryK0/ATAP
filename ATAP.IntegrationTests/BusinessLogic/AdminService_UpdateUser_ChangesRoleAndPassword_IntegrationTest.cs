@@ -1,3 +1,5 @@
+// Интеграционный тест: сервисы с PostgreSQL сохраняют роль и пароль: старый пароль отклоняется, новый позволяет войти.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

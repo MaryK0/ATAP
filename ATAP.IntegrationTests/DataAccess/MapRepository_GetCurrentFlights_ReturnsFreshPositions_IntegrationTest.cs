@@ -1,3 +1,5 @@
+// Интеграционный тест: репозиторий карты с PostgreSQL и Redis возвращает свежие позиции и исключает устаревший рейс.
+
 using ATAP.DataAccess;
 using ATAP.DataAccess.Factories;
 using ATAP.DataAccess.Repositories;

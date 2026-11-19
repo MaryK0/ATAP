@@ -2,7 +2,7 @@
 # Демонстрационный сценарий E2E-теста, воспроизведённый вручную через curl (WebLab «Тестирование», п. 5).
 #   scripts/e2e-curl.sh <адрес API>          например: scripts/e2e-curl.sh http://127.0.0.1:5080
 # Для каждого запроса печатается ожидаемый и полученный код ответа; при расхождении скрипт завершается с ошибкой.
-# Те же 15 запросов делает автоматический тест ATAP.E2ETests; здесь они повторены отдельным инструментом,
+# Те же 27 запросов делает автоматический тест ATAP.E2ETests; здесь они повторены отдельным инструментом,
 # чтобы снять трафик (scripts/capture-traffic.sh).
 set -euo pipefail
 
@@ -18,8 +18,8 @@ TOKEN=""
 # call <ожидаемый код> <метод> <путь> [curl-аргументы…]
 call() {
   local expected="$1" method="$2" path="$3"; shift 3
-  local auth=()
-  [ -z "$TOKEN" ] || auth=(-H "Authorization: Bearer $TOKEN")
+  local auth=(-H "X-ATAP-Developer: ${ATAP_DEVELOPER:-local}")
+  [ -z "$TOKEN" ] || auth+=(-H "Authorization: Bearer $TOKEN")
   STEP=$((STEP + 1))
   local code
   code="$(curl -sS -o "$BODY" -D "$HEADERS" -w '%{http_code}' -X "$method" "${auth[@]}" "$@" "$BASE$path")"
@@ -34,10 +34,17 @@ call 200 GET  "/api/v1/airports?limit=100"
 call 200 GET  "/api/v1/flights/current"
 ETAG="$(sed -n 's/^[Ee][Tt]ag: *//p' "$HEADERS" | tr -d '\r')"
 call 304 GET  "/api/v1/flights/current" -H "If-None-Match: $ETAG"
+call 200 GET  "/api/v1/flights/current?bbox=37,55,38,56"
+call 400 GET  "/api/v1/flights/current?bbox=1,2,3"
+call 200 GET  "/api/v1/flights/current?originCountry=germany"
+call 200 GET  "/api/v1/flights/current?minAltitude=2000&maxAltitude=3500"
+call 200 GET  "/api/v1/flights/current?bbox=-1,49,9,52&maxAltitude=3000&originCountry=Germany"
+call 400 GET  "/api/v1/flights/current?minAltitude=5000&maxAltitude=1000"
 call 401 GET  "/api/v1/congestion?$PERIOD"
 
 # Вход
 call 401 POST "/api/v1/login" -H 'Content-Type: application/json' -d "{\"username\":\"$USER_NAME\",\"password\":\"wrong-password\"}"
+call 401 POST "/api/v1/login" -H 'Content-Type: application/json' -d '{"username":"nobody","password":"wrong-password"}'
 call 201 POST "/api/v1/login" -H 'Content-Type: application/json' -d "{\"username\":\"$USER_NAME\",\"password\":\"$PASSWORD\"}"
 TOKEN="$(json accessToken)"
 [ -n "$TOKEN" ] || { echo "Токен не получен"; exit 1; }
@@ -46,12 +53,20 @@ TOKEN="$(json accessToken)"
 call 200 GET  "/api/v1/congestion?$PERIOD"
 call 200 GET  "/api/v1/congestion?$PERIOD" -H 'Accept: text/csv'
 call 400 GET  "/api/v1/congestion?airportId=1&dateFrom=2026-06-11&dateTo=2026-06-10"
+call 400 GET  "/api/v1/congestion?airportId=1&dateFrom=2026-04-01&dateTo=2026-06-10"
+call 400 GET  "/api/v1/congestion?airportId=999&dateFrom=2026-06-10&dateTo=2026-06-10"
+call 406 GET  "/api/v1/congestion?$PERIOD" -H 'Accept: application/xml'
 
 # Отчёт: создать, найти, удалить
+call 400 POST "/api/v1/reports" -H 'Content-Type: application/json' \
+  -d '{"name":"  ","airportId":1,"dateFrom":"2026-06-10","dateTo":"2026-06-10"}'
 call 201 POST "/api/v1/reports" -H 'Content-Type: application/json' \
   -d '{"name":"curl: Sheremetyevo, 10 June","airportId":1,"dateFrom":"2026-06-10","dateTo":"2026-06-10"}'
 REPORT_ID="$(json id)"
+LOCATION="$(sed -n 's/^[Ll]ocation: *//p' "$HEADERS" | tr -d '\r')"
+[ "$LOCATION" = "/api/v1/reports/$REPORT_ID" ] || { echo 'Unexpected report Location'; exit 1; }
 call 200 GET    "/api/v1/reports"
+call 200 GET    "$LOCATION"
 call 204 DELETE "/api/v1/reports/$REPORT_ID"
 call 404 GET    "/api/v1/reports/$REPORT_ID"
 

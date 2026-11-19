@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis фильтрует высоту, включая границы диапазона.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;

@@ -1,3 +1,5 @@
+// Интеграционный тест: аналитика из PostgreSQL без деталей сохраняет число и типы движений, но не позывные и время.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

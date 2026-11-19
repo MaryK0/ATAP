@@ -1,3 +1,5 @@
+// Интеграционный тест: созданный в PostgreSQL отчёт читается с правильными параметрами и названием аэропорта.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.IntegrationTests.Infrastructure;
 

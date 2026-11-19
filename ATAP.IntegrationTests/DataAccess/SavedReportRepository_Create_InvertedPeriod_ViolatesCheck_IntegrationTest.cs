@@ -1,3 +1,5 @@
+// Интеграционный тест: CHECK в PostgreSQL отклоняет перевёрнутый период отчёта без сохранения записи.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.IntegrationTests.Infrastructure;
 using Npgsql;

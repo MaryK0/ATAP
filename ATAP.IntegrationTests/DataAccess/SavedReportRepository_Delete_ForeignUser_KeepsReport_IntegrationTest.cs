@@ -1,3 +1,5 @@
+// Интеграционный тест: попытка удаления чужого отчёта не изменяет данные PostgreSQL.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis возвращает три ожидаемых свежих рейса с позывными и высотами.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;
 using ATAP.DataAccess.Factories;

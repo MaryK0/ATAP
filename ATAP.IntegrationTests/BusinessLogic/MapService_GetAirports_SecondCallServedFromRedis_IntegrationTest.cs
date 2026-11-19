@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис получает аэропорты из PostgreSQL, заполняет Redis и очищает кэш при явной инвалидации.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;

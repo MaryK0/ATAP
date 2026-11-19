@@ -1,3 +1,5 @@
+// Интеграционный тест: владелец удаляет выбранный отчёт из PostgreSQL, остальные отчёты сохраняются.
+
 using ATAP.IntegrationTests.Infrastructure;
 
 namespace ATAP.IntegrationTests.DataAccess;

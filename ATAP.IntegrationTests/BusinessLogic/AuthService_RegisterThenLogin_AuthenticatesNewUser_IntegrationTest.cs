@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис сохраняет в PostgreSQL хеш пароля и роль analyst, затем успешно выполняет вход.
+
 using ATAP.BusinessLogic.Services;
 using ATAP.IntegrationTests.Infrastructure;
 

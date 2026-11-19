@@ -1,3 +1,5 @@
+// Интеграционный тест: сервис с PostgreSQL и Redis фильтрует страну без учёта регистра, неизвестная страна даёт пустой список.
+
 using ATAP.BusinessLogic.DTO;
 using ATAP.BusinessLogic.Services;
 using ATAP.DataAccess;
