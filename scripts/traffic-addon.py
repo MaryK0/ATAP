@@ -32,7 +32,7 @@ class Capture:
                     pass
         self.writer.add(saved)
         self.stream.flush()
-        self.log.write(f"developer={flow.request.headers.get('X-ATAP-Developer', 'probe')} {flow.request.method} {flow.request.path} -> {flow.response.status_code}\n")
+        self.log.write(f"{flow.request.method} {flow.request.path} -> {flow.response.status_code}\n")
         self.log.flush()
 
     def done(self):

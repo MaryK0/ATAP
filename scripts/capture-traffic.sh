@@ -8,59 +8,30 @@ mkdir -p "$OUT"
 OUT_HOST="$(cd "$OUT" && (pwd -W 2>/dev/null || pwd))"
 docker() { MSYS_NO_PATHCONV=1 command docker "$@"; }
 MITM_IMAGE=mitmproxy/mitmproxy:10.4.2
-MITM_NAME="atap-mitm-${ATAP_DEVELOPER:-local}-$$"
-PCAP_NAME="${MITM_NAME}-pcap"
+MITM_NAME="atap-mitm-$$"
+export ATAP_TEST_PROJECT="${ATAP_TEST_PROJECT:-atap-traffic-$(date +%s)-$$}"
 cleanup() {
-  docker rm -f "$PCAP_NAME" >/dev/null 2>&1 || true
   docker rm -f "$MITM_NAME" >/dev/null 2>&1 || true
-  if [ "${ATAP_CAPTURE_EXISTING:-0}" != 1 ] && [ -n "${ATAP_TEST_PROJECT:-}" ]; then
-    bash scripts/test-stand.sh down || true
-  fi
+  bash scripts/test-stand.sh down || true
 }
 trap cleanup EXIT
-if [ "${ATAP_CAPTURE_EXISTING:-0}" != 1 ]; then
-  export ATAP_TEST_PROJECT="${ATAP_TEST_PROJECT:-atap-traffic-$(date +%s)-$$}"
-  eval "$(bash scripts/test-stand.sh up)"
-fi
-NETWORK="${ATAP_TEST_PROJECT:?}_default"
-output_args=(--mount "type=bind,source=${OUT_HOST},target=/out")
-if [ -n "${ATAP_TRAFFIC_VOLUME:-}" ]; then output_args=(-v "${ATAP_TRAFFIC_VOLUME}:/out"); fi
+eval "$(bash scripts/test-stand.sh up)"
+NETWORK="${ATAP_TEST_PROJECT}_default"
 docker create --name "$MITM_NAME" --user 0 --network "$NETWORK" -p 127.0.0.1::8888 \
-  "${output_args[@]}" "$MITM_IMAGE" mitmdump \
+  --mount "type=bind,source=${OUT_HOST},target=/out" "$MITM_IMAGE" mitmdump \
   --mode reverse:http://atap-api:8080 --listen-host 0.0.0.0 --listen-port 8888 \
   --set flow_detail=0 -s /tmp/traffic-addon.py >/dev/null
 docker cp scripts/traffic-addon.py "$MITM_NAME:/tmp/traffic-addon.py"
 docker start "$MITM_NAME" >/dev/null
 PROXY_PORT="$(docker port "$MITM_NAME" 8888/tcp | head -1 | sed 's/.*://')"
-PROXY="http://${ATAP_DOCKER_HOST:-127.0.0.1}:${PROXY_PORT}"
-# Неавторизованный запрос отдельно сохраняется в pcap для Wireshark.
-# Запись останавливается до логина: паролей и JWT в этом pcap нет.
-if [ "${ATAP_CAPTURE_PCAP:-0}" = 1 ]; then
-  docker run -d --name "$PCAP_NAME" --user 0 --network "container:$MITM_NAME" \
-    --cap-add NET_RAW --cap-add NET_ADMIN "${output_args[@]}" \
-    --entrypoint tcpdump nicolaka/netshoot:v0.14 \
-    -i any -U -s 0 -w /out/developer.pcap 'tcp port 8888' >/dev/null
+PROXY="http://127.0.0.1:${PROXY_PORT}"
+ready=0
+for _ in $(seq 1 30); do
+  if curl -fs -o /dev/null "$PROXY/api/v1/airports"; then ready=1; break; fi
   sleep 1
-  docker run --rm --network "$NETWORK" --entrypoint bash "$IMAGE" \
-    -c 'for i in {1..30}; do curl -fs -o /dev/null -H "X-ATAP-Developer: $2" "$1/api/v1/airports?limit=1" && exit 0; sleep 1; done; exit 1' \
-    -- "http://$MITM_NAME:8888" "${ATAP_DEVELOPER:-local}"
-  docker stop -t 5 "$PCAP_NAME" >/dev/null
-fi
-# Для Jenkins запрос делается контейнером в сети стенда: порт опубликован только на loopback хоста.
-if [ "${ATAP_CAPTURE_IN_CONTAINER:-0}" = 1 ]; then
-  docker run --rm --network "$NETWORK" --entrypoint bash \
-    -e "ATAP_DEVELOPER=${ATAP_DEVELOPER:-local}" \
-    -v "${WORK_VOL:?}:/work:ro" "${IMAGE:?}" \
-    -c 'for i in {1..30}; do curl -fs -o /dev/null "$1/api/v1/airports" && break; sleep 1; done; bash /work/src/scripts/e2e-curl.sh "$1"' -- "http://$MITM_NAME:8888"
-else
-  ready=0
-  for _ in $(seq 1 30); do
-    if curl -fs -o /dev/null "$PROXY/api/v1/airports"; then ready=1; break; fi
-    sleep 1
-  done
-  [ "$ready" = 1 ] || { docker logs "$MITM_NAME" >&2; exit 1; }
-  echo "[traffic] developer=${ATAP_DEVELOPER:-local} project=$ATAP_TEST_PROJECT proxy=$PROXY" >&2
-  bash scripts/e2e-curl.sh "$PROXY"
-fi
+done
+[ "$ready" = 1 ] || { docker logs "$MITM_NAME" >&2; exit 1; }
+echo "[traffic] project=$ATAP_TEST_PROJECT proxy=$PROXY" >&2
+bash scripts/e2e-curl.sh "$PROXY"
 docker stop "$MITM_NAME" >/dev/null
-echo "Traffic capture: ${ATAP_TRAFFIC_VOLUME:-$OUT}/e2e-traffic.log and e2e.flow (credentials redacted)" >&2
+echo "Traffic capture: $OUT/e2e-traffic.log and e2e.flow (credentials redacted)" >&2

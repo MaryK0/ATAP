@@ -15,59 +15,43 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
 
-    parameters {
-        choice(name: 'FAULT_TARGET', choices: ['none', 'postgres', 'api'], description: 'Остановить компонент только тестового стенда перед соответствующим этапом')
-        booleanParam(name: 'PARALLEL_DEMO', defaultValue: false, description: 'Пять независимых разработчиков: integration и E2E параллельно')
-    }
-
     stages {
         stage('Образ с тестами') {
+            // prepare.sh собирает Docker-образ с .NET и зависимостями, создаёт временные тома.
             steps { sh 'bash ci/prepare.sh' }
         }
 
         stage('Unit') {
+            // stage-run.sh запускает контейнер тестов; run-tests.sh внутри выполняет unit-тесты без БД.
             steps { sh 'bash ci/stage-run.sh unit' }
         }
 
         stage('Стенд') {
+            // stand-up.sh через test-stand.sh поднимает тестовые PostgreSQL, Redis и API, ждёт готовности.
             steps { sh 'bash ci/stand-up.sh' }
         }
 
         stage('Integration') {
-            when { expression { !params.PARALLEL_DEMO } }
             steps {
-                sh 'bash ci/fault.sh integration'
+                // stage-run.sh запускает integration-тесты репозиториев и сервисов с реальными хранилищами.
                 sh 'bash ci/stage-run.sh integration'
             }
         }
 
         stage('E2E') {
-            when { expression { !params.PARALLEL_DEMO } }
             steps {
-                sh 'bash ci/fault.sh e2e'
+                // stage-run.sh запускает E2E: полный пользовательский сценарий через HTTP API.
                 sh 'bash ci/stage-run.sh e2e'
             }
         }
 
-        stage('Пять разработчиков') {
-            when { expression { params.PARALLEL_DEMO } }
-            steps {
-                script {
-                    if (params.FAULT_TARGET != 'none') error('Параллельный показ и остановку компонентов запускайте отдельно')
-                    def developers = [:]
-                    for (int i = 1; i <= 5; i++) {
-                        def developer = "dev-${i}"
-                        developers[developer] = { sh "bash ci/parallel-run.sh ${developer}" }
-                    }
-                    parallel developers
-                }
-            }
-        }
     }
 
     post {
         always {
+            // finish.sh отмечает пропуски, строит Allure с историей и удаляет временный тестовый стенд.
             sh 'bash ci/finish.sh'
+            // Jenkins сохраняет отчёт, логи и результаты как артефакты сборки.
             archiveArtifacts artifacts: 'ci-results/**', allowEmptyArchive: true
         }
     }

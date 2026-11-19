@@ -18,7 +18,7 @@ TOKEN=""
 # call <ожидаемый код> <метод> <путь> [curl-аргументы…]
 call() {
   local expected="$1" method="$2" path="$3"; shift 3
-  local auth=(-H "X-ATAP-Developer: ${ATAP_DEVELOPER:-local}")
+  local auth=()
   [ -z "$TOKEN" ] || auth+=(-H "Authorization: Bearer $TOKEN")
   STEP=$((STEP + 1))
   local code

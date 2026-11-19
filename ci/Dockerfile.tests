@@ -7,7 +7,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates python3 curl \
+ && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
  && git config --system --add safe.directory '*'
 

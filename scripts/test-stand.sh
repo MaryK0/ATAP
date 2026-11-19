@@ -55,9 +55,7 @@ wait_completed() {
 stand_up() {
   # ATAP_STAND_SERVICES — список сервисов через пробел (по умолчанию весь стенд, включая контейнер API)
   # shellcheck disable=SC2086
-  local build_flag=--build
-  [ "${ATAP_STAND_NO_BUILD:-0}" != 1 ] || build_flag=--no-build
-  compose up -d "$build_flag" ${ATAP_STAND_SERVICES:-} >&2
+  compose up -d --build ${ATAP_STAND_SERVICES:-} >&2
   # --wait не подходит: разовый контейнер db-e2e завершается кодом 0, и compose считает это ошибкой
   wait_healthy postgres-test
   wait_healthy redis-test
