@@ -10,6 +10,9 @@ export BUILD_NUMBER="${parent}-${developer}"
 parent_results="atap-ci-results-${parent}"
 parent_work="atap-ci-work-${parent}"
 cleanup() {
+  local runners=()
+  mapfile -t runners < <(docker ps -aq --filter "label=atap.test.project=$PROJECT")
+  if [ "${#runners[@]}" -gt 0 ]; then docker rm -f "${runners[@]}" >/dev/null 2>&1 || true; fi
   docker compose -p "$PROJECT" -f docker-compose.test.yml logs --no-color atap-api 2>&1 | \
     docker run --rm -i -v "$RESULTS_VOL:/results" --entrypoint bash "$IMAGE" -c 'cat > /results/api.log' || true
   docker run --rm -v "$RESULTS_VOL:/src" -v "$parent_results:/dst" --entrypoint bash "$IMAGE" \

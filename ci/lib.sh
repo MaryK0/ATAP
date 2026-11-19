@@ -28,11 +28,15 @@ run_tests_container() {
     network_args=(--network "$NETWORK")
   fi
   docker run --rm \
+    --name "${PROJECT}-tests-${1}" \
+    --label "atap.test.project=$PROJECT" \
+    --cpus 1 --memory 768m --pids-limit 256 \
     -v "${WORK_VOL}:/work" \
     -v "${RESULTS_VOL}:/results" \
     --mount "type=bind,source=${HOST_REPO},target=/repo,readonly" \
     -e REPO_URL=file:///repo \
     -e COMMIT="${GIT_COMMIT:-HEAD}" \
+    -e DOTNET_PROCESSOR_COUNT=2 \
     -e ATAP_TEST_PG="$STAND_PG" \
     -e ATAP_TEST_REDIS="$STAND_REDIS" \
     -e ATAP_TEST_API="$STAND_API" \

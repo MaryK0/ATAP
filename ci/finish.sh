@@ -8,6 +8,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 . ci/lib.sh
 
 cleanup() {
+  local runners=()
+  mapfile -t runners < <(docker ps -aq --filter "label=atap.test.project=$PROJECT")
+  if [ "${#runners[@]}" -gt 0 ]; then docker rm -f "${runners[@]}" >/dev/null 2>&1 || true; fi
   echo "[finish] Удаляю стенд и тома сборки $BUILD_NUMBER"
   ATAP_TEST_PROJECT="$PROJECT" bash scripts/test-stand.sh down || true
   docker volume rm -f "$RESULTS_VOL" "$WORK_VOL" >/dev/null 2>&1 || true

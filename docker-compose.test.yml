@@ -20,6 +20,8 @@ services:
   postgres-test:
     build: *testdb-build
     image: atap-test-db:latest
+    command: [postgres, -c, shared_buffers=32MB, -c, max_connections=60]
+    mem_limit: 512m
     ports:
       - "127.0.0.1::5432"        # порт хоста назначает Docker
     tmpfs:
@@ -28,6 +30,7 @@ services:
 
   redis-test:
     image: redis:7-alpine
+    mem_limit: 128m
     command: ["redis-server", "--save", "", "--appendonly", "no"]   # без записи на диск
     ports:
       - "127.0.0.1::6379"
@@ -54,6 +57,7 @@ services:
       context: .
       dockerfile: ATAP.Api/Dockerfile
     image: atap-api:test
+    mem_limit: 256m
     environment:
       ConnectionStrings__DefaultConnection: "Host=postgres-test;Port=5432;Database=atap_e2e;Username=postgres;Password=test_pass"
       ConnectionStrings__Redis: "redis-test:6379,abortConnect=false,connectTimeout=2000"
