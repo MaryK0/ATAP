@@ -237,3 +237,26 @@ issuer/audience, срок и активность jti. Logout и смена па
 - В WebLab#8 SPA размещается в `/` и обращается к `/api/v1/...` того же origin.
   Сохранить остальные маршруты, запреты и обработку 404; имя api:8090 клиенту
   браузера не доступно. После изменений повторять согласованные HTTP-проверки.
+
+### ЛР2 по тестированию — актуальная демонстрация 19.11.2026
+
+- Инструкции и фактические прогоны: `docs/lr2-demo.md`, актуальное дополнение `TESTING.md`.
+- Jenkins: `bash ci/jenkins.sh up`; обычная сборка — `python -u ci/demo.py build`.
+- Проверенные сборки: 9 и 14 — SUCCESS (152 теста); 10 — отказ PostgreSQL
+  (E2E skipped, Allure сохранён); 11 — отказ API (E2E broken, Allure сохранён).
+- `python -u ci/demo.py parallel`: один Jenkins build, unit один раз и пять
+  независимых integration → E2E веток. Сборка 13 — SUCCESS, 324 теста.
+  Все пять стендов готовы до начала тестов; имена/порты/время — в `[developer]`.
+- Обычные сборки остаются последовательными: `disableConcurrentBuilds`
+  защищает общую историю Allure. Параллельный режим находится внутри сборки.
+- Реальные отказы только тестового стенда: `--fault postgres` или `--fault api`
+  с `--expect-failure`. Не останавливать рабочие БД и контейнеры WebLab#4.
+- Curl повторяет все 27 HTTP-запросов E2E. `scripts/capture-traffic.sh`
+  сохраняет свежий захват в `TestResults/lr2/traffic/`; flow редактируется
+  только в сохраняемой копии, пароли/JWT скрываются, живой ответ не меняется.
+- Параллельные ветки сохраняют guest-only `developer.pcap` для Wireshark.
+  Локальный объединённый файл — `TestResults/lr2/jenkins-13/developers.pcap`.
+- Артефакты и отчёт доступны в Jenkins, локальные доказательства — в
+  `TestResults/lr2/jenkins-<номер>/`. Эти каталоги исключены из Git.
+- SDK runner ограничен 1 CPU/768 MiB, PostgreSQL 512 MiB, API 256 MiB.
+  Сбой Docker в сборке 12 сохранён в истории; повторный прогон 13 успешен.

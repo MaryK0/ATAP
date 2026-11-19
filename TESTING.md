@@ -613,3 +613,24 @@ claims подписываются тестовым ключом при сохр�
 роли и отзыва токена после logout/смены пароля сохранены.
 Прогон `TestResults/lr3/jwt-run.log` прошёл: 82 HTTP-запроса, 25/25 операций,
 109 unit, 42 integration, 1 E2E и TUI/HTTP-страницы Blazor.
+
+## Актуальный показ ЛР2 (19.11.2026)
+
+Команды и соответствие пунктам задания: [docs/lr2-demo.md](docs/lr2-demo.md).
+
+- Обычный CI: `python -u ci/demo.py build`.
+- Отказ тестовой БД: `python -u ci/demo.py build --fault postgres --expect-failure`.
+- Отказ API: `python -u ci/demo.py build --fault api --expect-failure`.
+- Пять разработчиков: `python -u ci/demo.py parallel`.
+
+Параллельный режим запускает unit один раз и пять изолированных веток
+integration → E2E. Это режим одного задания Jenkins; обычные сборки остаются
+последовательными для сохранения общей истории Allure.
+
+Захват: `bash scripts/capture-traffic.sh`, теперь 27 запросов текущего E2E.
+Свежие flow и журнал — в `TestResults/lr2/traffic/`, секреты в копиях скрыты.
+Исторические файлы `docs/traffic/` не являются свежим захватом. В параллельном
+режиме дополнительно создаётся гостевой `developer.pcap` для Wireshark.
+
+Консоль, сводка и тренд каждого запуска — в `TestResults/lr2/jenkins-<номер>/`;
+полный отчёт и результаты разработчиков — в артефактах сборки Jenkins.
