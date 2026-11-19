@@ -15,6 +15,9 @@ STAGES=(unit integration e2e)
 
 # Адреса сервисов стенда внутри его сети (тесты обращаются к ним по именам сервисов)
 STAND_PG="Host=postgres-test;Port=5432;Username=postgres;Password=test_pass;Pooling=true;Maximum Pool Size=20"
+if [ "${FAULT_TARGET:-none}" = postgres ]; then
+  STAND_PG+=";Timeout=2"
+fi
 STAND_REDIS="redis-test:6379"
 STAND_API="http://atap-api:8080"
 
