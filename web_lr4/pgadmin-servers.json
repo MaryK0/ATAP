@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ATAP PostgreSQL",
+      "Group": "ATAP",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "atap_db",
+      "Username": "admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

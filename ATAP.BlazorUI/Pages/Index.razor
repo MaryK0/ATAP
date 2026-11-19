@@ -14,17 +14,17 @@
     </div>
 
     <div class="stats-row">
-        <a href="/map" class="stat-card" style="text-decoration: none; cursor: pointer;">
+        <a href="map" class="stat-card" style="text-decoration: none; cursor: pointer;">
             <div class="stat-value">🗺️</div>
             <div class="stat-label">Карта рейсов</div>
         </a>
-        <a href="/analytics" class="stat-card" style="text-decoration: none; cursor: pointer;">
+        <a href="analytics" class="stat-card" style="text-decoration: none; cursor: pointer;">
             <div class="stat-value">📊</div>
             <div class="stat-label">Аналитика</div>
         </a>
         @if (AppState.UserRole == "admin")
         {
-            <a href="/admin" class="stat-card" style="text-decoration: none; cursor: pointer;">
+            <a href="admin" class="stat-card" style="text-decoration: none; cursor: pointer;">
                 <div class="stat-value">⚙️</div>
                 <div class="stat-label">Пользователи</div>
             </a>
@@ -34,19 +34,19 @@
 else
 {
     <div class="alert alert-info" style="margin-bottom: 24px;">
-        Для доступа к аналитике необходимо <a href="/login">войти в систему</a>.
+        Для доступа к аналитике необходимо <a href="login">войти в систему</a>.
     </div>
 
     <div class="stats-row">
-        <a href="/map" class="stat-card" style="text-decoration: none; cursor: pointer;">
+        <a href="map" class="stat-card" style="text-decoration: none; cursor: pointer;">
             <div class="stat-value">🗺️</div>
             <div class="stat-label">Карта рейсов</div>
         </a>
-        <a href="/login" class="stat-card" style="text-decoration: none; cursor: pointer;">
+        <a href="login" class="stat-card" style="text-decoration: none; cursor: pointer;">
             <div class="stat-value">🔐</div>
             <div class="stat-label">Войти</div>
         </a>
-        <a href="/register" class="stat-card" style="text-decoration: none; cursor: pointer;">
+        <a href="register" class="stat-card" style="text-decoration: none; cursor: pointer;">
             <div class="stat-value">📝</div>
             <div class="stat-label">Регистрация</div>
         </a>

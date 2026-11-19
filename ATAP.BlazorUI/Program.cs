@@ -82,6 +82,10 @@ builder.Services.AddTransient<SavedReportViewModel>();
 
 var app = builder.Build();
 
+// Keep the original root deployment; Compose can mount the UI under /legacy.
+var pathBase = builder.Configuration["PathBase"];
+if (!string.IsNullOrEmpty(pathBase)) app.UsePathBase(pathBase);
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -92,10 +96,11 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+if (!builder.Configuration.GetValue<bool>("DisableHttpsRedirection")) app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.MapRazorPages();
 app.MapBlazorHub();
+app.MapGet("/health", () => Results.Text("alive\n"));
 app.MapFallbackToPage("/_Host");
 app.Run();

@@ -6,7 +6,7 @@
 @if (!AppState.IsAuthenticated)
 {
     <div class="alert alert-info">
-        Для просмотра отчётов необходимо <a href="/login">войти в систему</a>.
+        Для просмотра отчётов необходимо <a href="login">войти в систему</a>.
     </div>
     return;
 }
@@ -30,7 +30,7 @@
 else if (VM.Reports.Count == 0)
 {
     <div class="alert alert-info">
-        Нет сохранённых отчётов. Перейдите в <a href="/analytics">Аналитику</a> и нажмите «Сохранить отчёт».
+        Нет сохранённых отчётов. Перейдите в <a href="analytics">Аналитику</a> и нажмите «Сохранить отчёт».
     </div>
 }
 else

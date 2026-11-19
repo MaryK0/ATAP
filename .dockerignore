@@ -7,4 +7,5 @@ allure-results/
 allure-report/
 publish/
 node_modules/
-web_lr1/
+web_lr4/.env
+web_lr4/secrets/

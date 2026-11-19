@@ -1,0 +1,108 @@
+name: atap-web
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_DB: atap_db
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run python web_lr4/start.py}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../db/create_tables.sql:/docker-entrypoint-initdb.d/01_tables.sql:ro
+      - ../db/add_api.sql:/docker-entrypoint-initdb.d/02_api.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U ${DB_USER:-admin} -d atap_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ..
+      dockerfile: ATAP.Api/Dockerfile
+      args:
+        HTTP_PORT: "8090"
+    environment:
+      ASPNETCORE_URLS: http://+:8090
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=atap_db;Username=${DB_USER:-admin};Password=${DB_PASSWORD:?Set DB_PASSWORD}
+      ConnectionStrings__Redis: redis:6379,abortConnect=false,connectTimeout=2000
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY}
+      Swagger__SpecificationUrl: /api/v1/docs/openapi.yaml
+      Health__BlazorUrl: http://blazor:8080/legacy/health
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  blazor:
+    build:
+      context: ..
+      dockerfile: ATAP.BlazorUI/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=atap_db;Username=${DB_USER:-admin};Password=${DB_PASSWORD:?Set DB_PASSWORD}
+      ConnectionStrings__Redis: redis:6379,abortConnect=false,connectTimeout=2000
+      PathBase: /legacy
+      DisableHttpsRedirection: "true"
+      StorageBackend: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4:9.10
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD}
+      PGADMIN_DISABLE_POSTFIX: "true"
+      SCRIPT_NAME: /admin
+    healthcheck:
+      test: [CMD, /venv/bin/python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1/admin/login', timeout=3).close()"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin-servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: web_lr4/Dockerfile
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8088}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./secrets/htpasswd:/etc/nginx/secrets/htpasswd:ro
+    depends_on:
+      api:
+        condition: service_started
+      blazor:
+        condition: service_started
+      pgadmin:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
+  pgadmin_data:

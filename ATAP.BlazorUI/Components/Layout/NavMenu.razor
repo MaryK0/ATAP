@@ -7,17 +7,17 @@
 </div>
 
 <div class="nav-links">
-    <a href="/" class="nav-link">Главная</a>
-    <a href="/map" class="nav-link">Карта рейсов</a>
+    <a href="./" class="nav-link">Главная</a>
+    <a href="map" class="nav-link">Карта рейсов</a>
 
     @if (AppState.IsAuthenticated)
     {
-        <a href="/analytics" class="nav-link">Аналитика</a>
-        <a href="/reports" class="nav-link">Мои отчёты</a>
+        <a href="analytics" class="nav-link">Аналитика</a>
+        <a href="reports" class="nav-link">Мои отчёты</a>
 
         @if (AppState.UserRole == "admin")
         {
-            <a href="/admin" class="nav-link">Пользователи</a>
+            <a href="admin" class="nav-link">Пользователи</a>
         }
     }
 </div>
@@ -29,12 +29,12 @@
             @AppState.CurrentUser
             <span style="opacity:.7;">(@AppState.UserRole)</span>
         </span>
-        <a href="/logout" class="nav-link nav-logout" style="padding: 6px 0;">Выйти</a>
+        <a href="logout" class="nav-link nav-logout" style="padding: 6px 0;">Выйти</a>
     }
     else
     {
-        <a href="/login" class="nav-link" style="margin-bottom: 2px;">Войти</a>
-        <a href="/register" class="nav-link">Регистрация</a>
+        <a href="login" class="nav-link" style="margin-bottom: 2px;">Войти</a>
+        <a href="register" class="nav-link">Регистрация</a>
     }
 </div>
 

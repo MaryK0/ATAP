@@ -19,6 +19,7 @@ WORKDIR /app
 COPY --from=build /app .
 
 # Адрес и подключения задаются переменными окружения (ConnectionStrings__DefaultConnection, ...)
-ENV ASPNETCORE_URLS=http://+:8080
-EXPOSE 8080
+ARG HTTP_PORT=8080
+ENV ASPNETCORE_URLS=http://+:${HTTP_PORT}
+EXPOSE ${HTTP_PORT}
 ENTRYPOINT ["dotnet", "ATAP.Api.dll"]

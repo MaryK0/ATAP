@@ -34,3 +34,7 @@ node_modules/
 
 # CSV files downloaded through the console UI
 congestion_airport*.csv
+
+# Local WebLab 4 credentials
+web_lr4/.env
+web_lr4/secrets/

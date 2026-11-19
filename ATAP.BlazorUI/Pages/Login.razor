@@ -30,7 +30,7 @@
         </button>
 
         <div class="auth-footer">
-            Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+            Нет аккаунта? <a href="register">Зарегистрироваться</a>
         </div>
     </div>
 </div>
@@ -45,7 +45,7 @@
         await LocalStorage.SetAsync("username", user.Username);
         await LocalStorage.SetAsync("role", user.Role);
         await LocalStorage.SetAsync("userId", user.UserId);
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo(Navigation.BaseUri);
     }
 
     private async Task OnKeyDown(KeyboardEventArgs e)

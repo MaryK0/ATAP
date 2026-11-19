@@ -175,13 +175,14 @@ app.UseSwaggerUI(options =>
 {
     options.RoutePrefix = "swagger";
     options.DocumentTitle = "ATAP API";
-    options.SwaggerEndpoint("/openapi/openapi.yaml", "ATAP API");
+    options.SwaggerEndpoint(builder.Configuration["Swagger:SpecificationUrl"] ?? "/openapi/openapi.yaml", "ATAP API");
     options.EnableTryItOutByDefault();
 });
 
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapAtapHealth(connectionString, builder.Configuration["Health:BlazorUrl"]);
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();

@@ -1,0 +1,8 @@
+body { margin: 0; background: #f3f6fa; color: #17283b; font: 17px/1.65 system-ui, sans-serif; }
+main { max-width: 1080px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; }
+a { color: #1754a1; } nav, li { margin-bottom: .65rem; }
+img { max-width: 100%; height: auto; } figure { margin: 2rem 0; }
+table { border-collapse: collapse; display: block; overflow: auto; }
+td, th { border: 1px solid #ccd6e0; padding: .5rem; }
+pre { overflow: auto; padding: 1rem; background: #edf2f7; }
+@media(max-width: 700px) { main { margin: 0; padding: 1rem; } }
