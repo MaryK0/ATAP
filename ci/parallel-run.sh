@@ -44,7 +44,7 @@ else
 fi
 if [ "$code" = 0 ]; then
   ATAP_TEST_PROJECT="$PROJECT" ATAP_CAPTURE_EXISTING=1 ATAP_DEVELOPER="$developer" \
-    ATAP_CAPTURE_IN_CONTAINER=1 ATAP_TRAFFIC_VOLUME="$RESULTS_VOL" WORK_VOL="$WORK_VOL" IMAGE="$IMAGE" \
+    ATAP_CAPTURE_IN_CONTAINER=1 ATAP_CAPTURE_PCAP=1 ATAP_TRAFFIC_VOLUME="$RESULTS_VOL" WORK_VOL="$WORK_VOL" IMAGE="$IMAGE" \
     bash scripts/capture-traffic.sh || code=$?
 fi
 docker run --rm -v "$WORK_VOL:/work" -v "$RESULTS_VOL:/results" --entrypoint python3 "$IMAGE" \

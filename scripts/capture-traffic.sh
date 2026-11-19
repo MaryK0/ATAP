@@ -9,7 +9,9 @@ OUT_HOST="$(cd "$OUT" && (pwd -W 2>/dev/null || pwd))"
 docker() { MSYS_NO_PATHCONV=1 command docker "$@"; }
 MITM_IMAGE=mitmproxy/mitmproxy:10.4.2
 MITM_NAME="atap-mitm-${ATAP_DEVELOPER:-local}-$$"
+PCAP_NAME="${MITM_NAME}-pcap"
 cleanup() {
+  docker rm -f "$PCAP_NAME" >/dev/null 2>&1 || true
   docker rm -f "$MITM_NAME" >/dev/null 2>&1 || true
   if [ "${ATAP_CAPTURE_EXISTING:-0}" != 1 ] && [ -n "${ATAP_TEST_PROJECT:-}" ]; then
     bash scripts/test-stand.sh down || true
@@ -31,6 +33,19 @@ docker cp scripts/traffic-addon.py "$MITM_NAME:/tmp/traffic-addon.py"
 docker start "$MITM_NAME" >/dev/null
 PROXY_PORT="$(docker port "$MITM_NAME" 8888/tcp | head -1 | sed 's/.*://')"
 PROXY="http://${ATAP_DOCKER_HOST:-127.0.0.1}:${PROXY_PORT}"
+# Неавторизованный запрос отдельно сохраняется в pcap для Wireshark.
+# Запись останавливается до логина: паролей и JWT в этом pcap нет.
+if [ "${ATAP_CAPTURE_PCAP:-0}" = 1 ]; then
+  docker run -d --name "$PCAP_NAME" --user 0 --network "container:$MITM_NAME" \
+    --cap-add NET_RAW --cap-add NET_ADMIN "${output_args[@]}" \
+    --entrypoint tcpdump nicolaka/netshoot:v0.14 \
+    -i any -U -s 0 -w /out/developer.pcap 'tcp port 8888' >/dev/null
+  sleep 1
+  docker run --rm --network "$NETWORK" --entrypoint bash "$IMAGE" \
+    -c 'for i in {1..30}; do curl -fs -o /dev/null -H "X-ATAP-Developer: $2" "$1/api/v1/airports?limit=1" && exit 0; sleep 1; done; exit 1' \
+    -- "http://$MITM_NAME:8888" "${ATAP_DEVELOPER:-local}"
+  docker stop -t 5 "$PCAP_NAME" >/dev/null
+fi
 # Для Jenkins запрос делается контейнером в сети стенда: порт опубликован только на loopback хоста.
 if [ "${ATAP_CAPTURE_IN_CONTAINER:-0}" = 1 ]; then
   docker run --rm --network "$NETWORK" --entrypoint bash \

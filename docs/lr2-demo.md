@@ -90,9 +90,15 @@ python -u ci/demo.py parallel
 В Console Output найти `[developer]`: имя разработчика, проект, URL API,
 время начала/конца. В артефактах каждой ветки:
 `ci-results/developers/dev-N/developer.txt`, `api.log`, `e2e-traffic.log`,
-`e2e.flow`, `status/`, `trx/`, `allure-results/`.
+`e2e.flow`, `developer.pcap`, `status/`, `trx/`, `allure-results/`.
 В HTTP-журнале есть `developer=dev-N`, в запросе — `X-ATAP-Developer`.
 Allure различает одинаковые тесты по параметру developer и historyId.
+
+Для Wireshark скачать `developer.pcap` из артефактов нужной ветки.
+В нём один гостевой запрос к API (запись остановлена до логина).
+Для порта 8888 выбрать Decode As → HTTP, затем фильтр `http.request`:
+в заголовках виден `X-ATAP-Developer: dev-N`. Полный сценарий хранится
+в redacted-формате mitmproxy, отдельно от этого короткого pcap.
 
 Обычные сборки задания по-прежнему последовательны (`disableConcurrentBuilds`),
 поэтому запись общей истории Allure не конфликтует. Параллелизм выполняется
