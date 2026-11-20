@@ -27,8 +27,8 @@ COPY ATAP.BlazorUI/ATAP.BlazorUI.csproj ATAP.BlazorUI/
 COPY ATAP.BlazorUI.Tests/ATAP.BlazorUI.Tests.csproj ATAP.BlazorUI.Tests/
 COPY ATAP.IntegrationTests/ATAP.IntegrationTests.csproj ATAP.IntegrationTests/
 COPY ATAP.E2ETests/ATAP.E2ETests.csproj ATAP.E2ETests/
-RUN for p in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.BlazorUI.Tests ATAP.IntegrationTests ATAP.E2ETests; do \
-      dotnet restore "$p/$p.csproj"; \
+RUN set -e; for p in ATAP.BusinessLogic.Tests ATAP.DataAccess.Tests ATAP.BlazorUI.Tests ATAP.IntegrationTests ATAP.E2ETests; do \
+      dotnet restore "$p/$p.csproj" --disable-parallel; \
     done
 
 COPY ci/run-tests.sh /usr/local/bin/run-tests.sh

@@ -37,4 +37,7 @@ ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBr
 # Задание atap-tests создаётся автоматически: Pipeline из Jenkinsfile репозитория (file:///repo)
 COPY ci/jenkins/init.groovy.d/ /usr/share/jenkins/ref/init.groovy.d/
 RUN command -v flock
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends docker-buildx-plugin \
+ && rm -rf /var/lib/apt/lists/*
 COPY ci/jenkins/jobs/ /usr/share/jenkins/ref/jobs/
