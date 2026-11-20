@@ -10,7 +10,13 @@ cache_dir="${JENKINS_HOME:-/var/jenkins_home}/caches/atap"
 mkdir -p "$cache_dir"
 exec 8>"$cache_dir/test-image.lock"
 flock -x 8
-docker build -f ci/Dockerfile.tests -t "$IMAGE" -t atap-tests:cache .
+cache_args=()
+for candidate in atap-tests:cache atap-tests:ci; do
+  if docker image inspect "$candidate" >/dev/null 2>&1; then
+    cache_args+=(--cache-from "$candidate")
+  fi
+done
+docker build "${cache_args[@]}" -f ci/Dockerfile.tests -t "$IMAGE" -t atap-tests:cache .
 flock -u 8
 docker volume create "$RESULTS_VOL" >/dev/null
 docker volume create "$WORK_VOL" >/dev/null
