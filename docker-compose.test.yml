@@ -41,8 +41,9 @@ services:
       retries: 30
 
   db-e2e:
-    build: *testdb-build
+    # Образ собирает postgres-test; повторная сборка того же тега создаёт гонку экспорта.
     image: ${ATAP_TEST_DB_IMAGE:-atap-test-db:latest}
+    pull_policy: never
     depends_on:
       postgres-test:
         condition: service_healthy
