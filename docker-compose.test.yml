@@ -19,7 +19,7 @@ x-testdb-build: &testdb-build
 services:
   postgres-test:
     build: *testdb-build
-    image: atap-test-db:latest
+    image: ${ATAP_TEST_DB_IMAGE:-atap-test-db:latest}
     command: [postgres, -c, shared_buffers=32MB, -c, max_connections=60]
     mem_limit: 512m
     ports:
@@ -42,7 +42,7 @@ services:
 
   db-e2e:
     build: *testdb-build
-    image: atap-test-db:latest
+    image: ${ATAP_TEST_DB_IMAGE:-atap-test-db:latest}
     depends_on:
       postgres-test:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
     build:
       context: .
       dockerfile: ATAP.Api/Dockerfile
-    image: atap-api:test
+    image: ${ATAP_TEST_API_IMAGE:-atap-api:test}
     mem_limit: 256m
     environment:
       ConnectionStrings__DefaultConnection: "Host=postgres-test;Port=5432;Database=atap_e2e;Username=postgres;Password=test_pass"

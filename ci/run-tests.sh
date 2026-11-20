@@ -42,7 +42,7 @@ prepare() {
   if [ ! -f .built ] || [ "$(cat .built)" != "$(git rev-parse HEAD)" ]; then
     log "Собираю тестовые проекты"
     for project in "${UNIT_PROJECTS[@]}" "${PROJECTS[integration]}" "${PROJECTS[e2e]}"; do
-      dotnet build "$project" --configuration Release --nologo -v quiet
+      dotnet build "$project" --configuration Release --nologo -v quiet --disable-build-servers -m:1
     done
     # Тестовые проекты e2e и integration зависят от API только по HTTP; сам API собирается в отдельном образе
     git rev-parse HEAD > .built

@@ -12,6 +12,7 @@ services:
       - "127.0.0.1:8085:8080"
     environment:
       HOST_REPO: ${HOST_REPO:?запускайте через ci/jenkins.sh}
+      JENKINS_EXECUTORS: ${JENKINS_EXECUTORS:-5}
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock

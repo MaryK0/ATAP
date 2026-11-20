@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 . ci/lib.sh
+echo "[build] number=$BUILD_NUMBER commit=${GIT_COMMIT:-HEAD} project=$PROJECT image=$IMAGE"
 docker build -f ci/Dockerfile.tests -t "$IMAGE" .
 docker volume create "$RESULTS_VOL" >/dev/null
 docker volume create "$WORK_VOL" >/dev/null

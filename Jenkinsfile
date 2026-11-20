@@ -11,7 +11,8 @@ pipeline {
     agent any
 
     options {
-        disableConcurrentBuilds()
+        // Сборки независимы; число одновременно работающих задают executors Jenkins.
+        quietPeriod(0)
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
 
@@ -48,10 +49,15 @@ pipeline {
 
     post {
         always {
-            // finish.sh отмечает пропуски, строит Allure с историей и удаляет временный тестовый стенд.
-            sh 'bash ci/finish.sh'
-            // Jenkins сохраняет отчёт, логи и результаты как артефакты сборки.
-            archiveArtifacts artifacts: 'ci-results/**', allowEmptyArchive: true
+            script {
+                try {
+                    // finish.sh формирует Allure, синхронизирует историю и очищает стенд.
+                    sh 'bash ci/finish.sh'
+                } finally {
+                    // Сохраняем доступные результаты даже при ошибке формирования отчёта.
+                    archiveArtifacts artifacts: 'ci-results/**', allowEmptyArchive: true
+                }
+            }
         }
     }
 }

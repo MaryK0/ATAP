@@ -7,7 +7,10 @@ export MSYS_NO_PATHCONV=1
 : "${HOST_REPO:?переменная HOST_REPO задаётся в docker-compose.jenkins.yml}"
 
 PROJECT="atap-ci-${BUILD_NUMBER}"            # проект docker compose тестового стенда
-IMAGE="atap-tests:ci"                        # образ с тестами (ci/Dockerfile.tests)
+IMAGE="atap-tests:ci-${BUILD_NUMBER}"        # отдельный тег образа тестов каждой сборки
+HELPER_IMAGE="atap-jenkins:ci"               # готовый служебный образ, не пересобирается заданием
+export ATAP_TEST_DB_IMAGE="atap-test-db:ci-${BUILD_NUMBER}"
+export ATAP_TEST_API_IMAGE="atap-api:ci-${BUILD_NUMBER}"
 RESULTS_VOL="atap-ci-results-${BUILD_NUMBER}" # результаты: Allure JSON, TRX, статусы этапов
 WORK_VOL="atap-ci-work-${BUILD_NUMBER}"       # выкачанный и собранный репозиторий (общий для этапов)
 NETWORK="${PROJECT}_default"                  # сеть стенда: контейнер с тестами подключается к ней
@@ -44,5 +47,16 @@ run_tests_container() {
 # Копирует результаты из тома в каталог рабочей области Jenkins (без bind-mount: Jenkins сам работает в контейнере)
 export_results() {
   rm -rf ci-results && mkdir -p ci-results
-  docker run --rm -v "${RESULTS_VOL}:/src:ro" --entrypoint tar "$IMAGE" -C /src -cf - . | tar -C ci-results -xf -
+  docker run --rm -v "${RESULTS_VOL}:/src:ro" --entrypoint tar "$HELPER_IMAGE" -C /src -cf - . | tar -C ci-results -xf -
+}
+
+# Если образ тестов не собрался, отмечаем непройденный этап без .NET и повторной сборки.
+fallback_skipped() {
+  docker run --rm -v "${RESULTS_VOL}:/results" --entrypoint bash "$HELPER_IMAGE" -c '
+    stage="$1"; uuid="$(cat /proc/sys/kernel/random/uuid)"
+    mkdir -p /results/allure-results /results/status
+    printf "{\"uuid\":\"%s\",\"historyId\":\"ci-%s-not-executed\",\"name\":\"%s not executed\",\"status\":\"skipped\",\"stage\":\"finished\",\"labels\":[{\"name\":\"suite\",\"value\":\"CI\"}]}\n" \
+      "$uuid" "$stage" "$stage" > "/results/allure-results/$uuid-result.json"
+    echo skipped > "/results/status/$stage"
+  ' -- "$1"
 }

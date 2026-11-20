@@ -35,4 +35,6 @@ RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP= -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
 
 # Задание atap-tests создаётся автоматически: Pipeline из Jenkinsfile репозитория (file:///repo)
+COPY ci/jenkins/init.groovy.d/ /usr/share/jenkins/ref/init.groovy.d/
+RUN command -v flock
 COPY ci/jenkins/jobs/ /usr/share/jenkins/ref/jobs/
